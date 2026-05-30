@@ -1,24 +1,16 @@
-'use client';
-
-import Sidebar from '@/components/layout/Sidebar';
-import Topbar from '@/components/layout/Topbar';
+import AppLayout from '@/components/AppLayout'
 
 export default function MapPage() {
   return (
-    <div className="min-h-screen flex">
-      <Sidebar />
-      <div className="flex-1 flex flex-col main-content">
-        <Topbar />
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto">
-          <div className="glass-card p-10 h-full flex flex-col items-center justify-center">
-            <div className="text-6xl mb-6">🗺️</div>
-            <h2 className="text-2xl font-heading font-semibold text-white mb-3">Map View</h2>
-            <p className="text-white/50 max-w-md text-center">
-              Map visualization will be added here. Displaying project locations using latitude and longitude coordinates.
-            </p>
-          </div>
-        </main>
+    <AppLayout title="Map View">
+      <div className="card-elevated">
+        <h2 style={{ color: '#e6edf3', fontSize: '1.2rem', marginBottom: '1rem' }}>
+          Map View (Coming Soon)
+        </h2>
+        <p style={{ color: '#8b949e', fontSize: '0.9rem' }}>
+          Interactive map of projects will be available here.
+        </p>
       </div>
-    </div>
-  );
+    </AppLayout>
+  )
 }
