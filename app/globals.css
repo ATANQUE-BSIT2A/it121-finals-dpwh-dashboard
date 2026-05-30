@@ -15,12 +15,14 @@
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.09);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35),
-              inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
 .glass-strong {
@@ -83,6 +85,21 @@
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.20); }
 
+/* --- TEXT VISIBILITY --- */
+.glass-card p,
+.glass-card span,
+.glass-card h1,
+.glass-card h2,
+.glass-card h3,
+.glass-card h4,
+.glass-card label {
+  color: inherit;
+}
+
+main, aside, header {
+  color: rgba(255, 255, 255, 0.85);
+}
+
 /* ============================================
    GLOBAL BACKGROUND — Fixed, covers all pages
    ============================================ */
@@ -107,7 +124,7 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 15, 0.75); /* Increased opacity for readability */
+  background: rgba(5, 8, 15, 0.45); /* reduced to 0.45 */
   z-index: 0;
   pointer-events: none;
 }
