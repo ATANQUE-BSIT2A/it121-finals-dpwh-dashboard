@@ -27,7 +27,7 @@ type Project = {
   budget: number | null;
   progress: number | null;
   region: string | null;
-  start_date: string | null;
+  start_date?: string | null;
 };
 
 export default function DashboardPage() {
@@ -228,13 +228,15 @@ export default function DashboardPage() {
                         fontSize: 13,
                       }}
                       cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-                      formatter={(value: number) => {
-                        if (value >= 1000000000) {
-                          return `₱${(value / 1000000000).toFixed(2)}B`;
-                        } else if (value >= 1000000) {
-                          return `₱${(value / 1000000).toFixed(2)}M`;
+                      formatter={(value: any) => {
+                        const num = Number(value);
+                        if (!isFinite(num)) return `₱0`;
+                        if (num >= 1000000000) {
+                          return `₱${(num / 1000000000).toFixed(2)}B`;
+                        } else if (num >= 1000000) {
+                          return `₱${(num / 1000000).toFixed(2)}M`;
                         } else {
-                          return `₱${value.toLocaleString()}`;
+                          return `₱${num.toLocaleString()}`;
                         }
                       }}
                     />
