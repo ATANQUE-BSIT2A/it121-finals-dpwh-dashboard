@@ -1,8 +1,87 @@
-@import '../styles/glass.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ============================================
+   GLASS DESIGN SYSTEM
+   ============================================ */
+
+/* --- BASE GLASS LAYERS --- */
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glass-strong {
+  background: rgba(10, 14, 22, 0.85);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glass-accent {
+  background: rgba(26, 86, 219, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(26, 86, 219, 0.35);
+  box-shadow: 0 0 24px rgba(26, 86, 219, 0.15),
+              inset 0 1px 0 rgba(26, 86, 219, 0.2);
+}
+
+/* --- BORDER RADIUS --- */
+.glass-card,
+.glass-strong,
+.glass-subtle,
+.glass-accent {
+  border-radius: 16px;
+}
+
+/* --- HOVER STATES --- */
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: all 0.25s ease;
+}
+
+/* --- GLASS BADGE / STATUS PILL --- */
+.glass-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  letter-spacing: 0.02em;
+}
+
+.badge-completed  { background: rgba(34, 197, 94, 0.15);  border: 1px solid rgba(34, 197, 94, 0.35);  color: #86efac; }
+.badge-ongoing    { background: rgba(59, 130, 246, 0.15);  border: 1px solid rgba(59, 130, 246, 0.35);  color: #93c5fd; }
+.badge-suspended  { background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: #fcd34d; }
+.badge-terminated { background: rgba(239, 68, 68, 0.15);  border: 1px solid rgba(239, 68, 68, 0.35);  color: #fca5a5; }
+
+/* --- SCROLLBAR --- */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.20); }
 
 /* ============================================
    GLOBAL BACKGROUND — Fixed, covers all pages
@@ -15,23 +94,20 @@ html, body {
 }
 
 body {
-  /* Fixed background: stays in place on scroll */
   background-image: url('/assets/background.avif');
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
   background-attachment: fixed;
-
-  /* Fallback color while image loads */
   background-color: #0A0C10;
 }
 
-/* Dark overlay on top of the image to deepen it for glass contrast */
+/* Dark overlay on top of the image to make text readable */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: rgba(5, 8, 15, 0.55);   /* Adjust 0.55 opacity — lower = more image visible */
+  background: rgba(5, 8, 15, 0.75); /* Increased opacity for readability */
   z-index: 0;
   pointer-events: none;
 }
@@ -47,10 +123,7 @@ body::before {
 /* ============================================
    RESPONSIVE LAYOUT
    ============================================ */
-
-/* Mobile: sidebar becomes bottom nav */
 @media (max-width: 767px) {
-  /* Sidebar hidden by default, overlays when open */
   .sidebar-overlay {
     position: fixed;
     inset: 0;
@@ -59,7 +132,6 @@ body::before {
     z-index: 39;
   }
 
-  /* Bottom navigation bar for mobile */
   .mobile-nav {
     position: fixed;
     bottom: 0;
@@ -77,37 +149,16 @@ body::before {
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* Main content: no left padding (no sidebar) */
   .main-content {
     margin-left: 0 !important;
-    padding-bottom: 80px; /* space for bottom nav */
+    padding-bottom: 80px;
   }
 
-  /* Cards: full width on mobile */
-  .glass-card {
-    border-radius: 12px;
-  }
-
-  /* Drawer: full screen on mobile */
-  .drawer-panel {
-    width: 100vw !important;
-  }
-
-  /* Filter bar: horizontal scroll */
-  .filter-bar {
-    overflow-x: auto;
-    flex-wrap: nowrap !important;
-    -webkit-overflow-scrolling: touch;
-  }
-  .filter-bar::-webkit-scrollbar { display: none; }
-
-  /* Fix background-attachment on mobile */
   body {
-    background-attachment: scroll; /* fixed is broken on iOS Safari */
+    background-attachment: scroll;
   }
 }
 
-/* Tablet: narrow sidebar (icons only) */
 @media (min-width: 768px) and (max-width: 1023px) {
   .sidebar-desktop {
     width: 72px;
@@ -120,7 +171,6 @@ body::before {
   }
 }
 
-/* Desktop: full sidebar */
 @media (min-width: 1024px) {
   .sidebar-desktop {
     width: 240px;
