@@ -16,30 +16,32 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="w-60 bg-bg-secondary border-r border-white/10 p-4 flex flex-col gap-2">
-      <div className="mb-8">
+    <aside className="sidebar-desktop glass-strong fixed left-0 top-0 h-full z-40 transition-all duration-300" style={{ borderRadius: 0, borderLeft: 'none', borderTop: 'none', borderBottom: 'none' }}>
+      <div className="p-6 mb-6">
         <h1 className="text-2xl font-heading font-bold text-white">DPWH</h1>
-        <p className="text-xs text-text-muted">Infrastructure Dashboard</p>
+        <p className="text-xs text-white/40">Infrastructure Dashboard</p>
       </div>
-      <nav className="flex-1">
+      <nav className="px-4 space-y-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 ${
                 isActive
-                  ? 'bg-accent-blue/20 text-accent-blue border border-accent-blue/30'
-                  : 'text-text-secondary hover:bg-bg-hover hover:text-white'
+                  ? 'glass-accent'
+                  : 'glass-subtle hover:glass-card'
               }`}
             >
-              <item.icon size={20} />
-              {item.label}
+              <item.icon size={20} className={isActive ? 'text-blue-400' : 'text-white/70'} />
+              <span className="nav-label text-sm font-medium" style={{ color: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.55)' }}>
+                {item.label}
+              </span>
             </Link>
           );
         })}
       </nav>
-    </div>
+    </aside>
   );
 }

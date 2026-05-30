@@ -11,21 +11,17 @@ export default function Topbar() {
   });
 
   return (
-    <div className="h-16 bg-bg-secondary border-b border-white/10 px-6 flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <h2 className="text-xl font-heading font-semibold text-white">
-          Infrastructure Dashboard
-        </h2>
-      </div>
+    <header className="glass-strong sticky top-0 z-30 px-6 py-3 flex items-center justify-between" style={{ borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none' }}>
+      <h2 className="text-xl font-heading font-semibold text-white">Infrastructure Dashboard</h2>
       <div className="flex items-center gap-6">
-        <span className="text-sm text-text-secondary">{today}</span>
-        <button className="p-2 rounded-lg hover:bg-bg-hover text-text-secondary hover:text-white transition-colors">
+        <span className="text-sm text-white/50">{today}</span>
+        <button className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors">
           <Search size={20} />
         </button>
-        <button className="p-2 rounded-lg hover:bg-bg-hover text-text-secondary hover:text-white transition-colors">
+        <button className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors">
           <Bell size={20} />
         </button>
       </div>
-    </div>
+    </header>
   );
 }

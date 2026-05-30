@@ -17,6 +17,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link
+          rel="preload"
+          href="/assets/background.avif"
+          as="image"
+          type="image/avif"
+        />
+      </head>
       <body className={`${dmSans.variable} ${sora.variable} font-sans`}>
         {children}
       </body>

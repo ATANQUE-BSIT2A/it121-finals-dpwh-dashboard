@@ -1,17 +1,14 @@
 'use client';
 
-import { motion, useAnimation, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { LucideIcon } from 'lucide-react';
 
 function useCountUp(target: number, duration: number = 1500) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true });
 
   useEffect(() => {
-    if (!isInView) return;
-
     let startTime: number;
     let animationFrameId: number;
 
@@ -28,7 +25,7 @@ function useCountUp(target: number, duration: number = 1500) {
 
     animationFrameId = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [target, duration, isInView]);
+  }, [target, duration]);
 
   return { count, ref };
 }
@@ -54,21 +51,41 @@ export default function KpiCard({
 }: KpiCardProps) {
   const { count, ref } = useCountUp(value);
 
+  // Extract RGB from color name
+  const getRgb = (name: string) => {
+    switch (name) {
+      case 'bg-accent-blue': return '59, 130, 246';
+      case 'bg-accent-gold': return '245, 158, 11';
+      case 'bg-status-completed': return '34, 197, 94';
+      case 'bg-status-ongoing': return '59, 130, 246';
+      case 'bg-purple-600': return '139, 92, 246';
+      default: return '59, 130, 246';
+    }
+  };
+  const iconColorRgb = getRgb(color);
+
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
-      className="glass-card p-6 hover:border-white/15 transition-all duration-300"
+      className="glass-card p-5 cursor-default"
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      initial={{ opacity: 0, y: 24, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-full ${color}`}>
-          <Icon size={24} className="text-white" />
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center"
+          style={{
+            background: `rgba(${iconColorRgb}, 0.18)`,
+            border: `1px solid rgba(${iconColorRgb}, 0.30)`
+          }}
+        >
+          <Icon size={22} className="text-white" />
         </div>
         <div>
-          <p className="text-sm text-text-muted mb-1">{label}</p>
-          <p className="text-3xl font-heading font-bold text-white">
+          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>{label}</p>
+          <p className="text-3xl font-bold text-white" style={{ fontFamily: 'Sora, sans-serif' }}>
             {prefix}
             {count.toLocaleString()}
             {suffix}
