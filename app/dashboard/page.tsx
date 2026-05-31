@@ -13,73 +13,92 @@ import { fetchAllRows, getTotalBudget, getStatusCounts, getYearStats, getBudgetB
 export const revalidate = 300
 
 export default async function DashboardPage() {
+  // Master Fetch: Get core fields for ALL projects to ensure 100% consistency across all charts
+  const allProjects = await fetchAllRows(
+    supabase.from('dpwh_projects').select('region, status, budget, infra_year, category, progress, contractor')
+  )
+
   const [
-    { count: totalCount },
-    statsData,
     { data: recentData },
-    globalStatuses,
-    globalYearStats,
-    globalBudgetByRegion,
-    globalCategories,
   ] = await Promise.all([
-    supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
-    fetchAllRows(supabase.from('dpwh_projects').select('region, status, budget, infra_year, category, progress, contractor').order('infra_year', { ascending: false }).order('contract_id', { ascending: true }), 10000),
     supabase.from('dpwh_projects')
       .select('contract_id, description, region, category, budget, status, progress')
       .order('infra_year', { ascending: false })
       .limit(10),
-    getStatusCounts(),
-    getYearStats(),
-    getBudgetByRegion(),
-    getProjectsByCategory(),
   ])
 
-  // Calculate stats from sample
-  const progressBuckets = [0,0,0,0,0,0,0,0,0,0]
-  const contractorMap: Record<string, { count: number, totalBudget: number, totalProgress: number, progressCount: number }> = {}
+  // Aggregation logic in memory for 100% consistency
+  const totalCount = allProjects.length
+  let totalBudget = 0
+  let completed = 0
+  let ongoing = 0
   
-  for (const p of statsData || []) {
-    const b = p.budget || 0
+  const budgetByRegionMap: Record<string, number> = {}
+  const statusMap: Record<string, number> = {}
+  const yearMap: Record<string, { count: number, totalBudget: number }> = {}
+  const categoryMap: Record<string, { count: number, totalBudget: number }> = {}
+  const progressBuckets = Array(10).fill(0)
+  const contractorMap: Record<string, { count: number, totalBudget: number, totalProgress: number, progressCount: number }> = {}
 
-    // Progress Buckets
+  for (const p of allProjects) {
+    const b = p.budget || 0
+    totalBudget += b
+    
+    // Regions
+    const r = p.region || 'Unknown'
+    budgetByRegionMap[r] = (budgetByRegionMap[r] || 0) + b
+    
+    // Status
+    const s = p.status || 'Unknown'
+    statusMap[s] = (statusMap[s] || 0) + 1
+    if (s === 'Completed') completed++
+    if (s === 'On-Going') ongoing++
+    
+    // Years
+    const y = p.infra_year || 'Unknown'
+    if (!yearMap[y]) yearMap[y] = { count: 0, totalBudget: 0 }
+    yearMap[y].count++
+    yearMap[y].totalBudget += b
+    
+    // Category
+    const c = p.category || 'Unknown'
+    if (!categoryMap[c]) categoryMap[c] = { count: 0, totalBudget: 0 }
+    categoryMap[c].count++
+    categoryMap[c].totalBudget += b
+    
+    // Progress
     const prog = Math.max(0, Math.min(100, p.progress || 0))
     const bucket = Math.min(9, Math.floor(prog / 10))
-    progressBuckets[bucket] += 1
-
-    // Contractor Stats
-    if (p.contractor) {
-      if (!contractorMap[p.contractor]) {
-        contractorMap[p.contractor] = { count: 0, totalBudget: 0, totalProgress: 0, progressCount: 0 }
-      }
-      contractorMap[p.contractor].count += 1
-      contractorMap[p.contractor].totalBudget += b
-      if (p.progress !== null) {
-        contractorMap[p.contractor].totalProgress += p.progress
-        contractorMap[p.contractor].progressCount += 1
-      }
+    progressBuckets[bucket]++
+    
+    // Contractors
+    const con = p.contractor || 'Unknown'
+    if (!contractorMap[con]) contractorMap[con] = { count: 0, totalBudget: 0, totalProgress: 0, progressCount: 0 }
+    contractorMap[con].count++
+    contractorMap[con].totalBudget += b
+    if (p.progress !== null) {
+      contractorMap[con].totalProgress += p.progress
+      contractorMap[con].progressCount++
     }
   }
 
-  // Format data for all charts
-  const budgetByRegionList = globalBudgetByRegion
-    .map(r => ({ region: r.region, total: r.totalBudget }))
+  // Format data for charts
+  const budgetByRegionList = Object.entries(budgetByRegionMap)
+    .map(([region, total]) => ({ region, total }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 10)
 
-  // Calculate total budget from all regions for 100% accuracy
-  const totalBudgetFromRegions = globalBudgetByRegion.reduce((sum, r) => sum + r.totalBudget, 0)
-  
-  // Use the reliable sum from regions for the KPI
-  let totalBudget = totalBudgetFromRegions || 0
+  const byStatus = Object.entries(statusMap)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
 
-  // Use global statuses for the donut chart
-  const byStatus = globalStatuses
+  const byYear = Object.entries(yearMap)
+    .map(([year, d]) => ({ year, count: d.count, totalBudget: d.totalBudget }))
+    .sort((a, b) => a.year.localeCompare(b.year))
 
-  // Use global year stats for the bar chart
-  const byYear = globalYearStats.sort((a, b) => a.year.localeCompare(b.year))
-
-  const categoryData = globalCategories
-    .map(c => ({ category: c.category, count: c.count, budget: c.totalBudget }))
+  const categoryData = Object.entries(categoryMap)
+    .map(([category, d]) => ({ category, count: d.count, budget: d.totalBudget }))
+    .sort((a, b) => b.count - a.count)
     .slice(0, 15)
 
   const progressData = progressBuckets.map((count, i) => ({
@@ -89,22 +108,18 @@ export default async function DashboardPage() {
   }))
 
   const contractorData = Object.entries(contractorMap)
-    .map(([contractor, data]) => ({
+    .map(([contractor, d]) => ({
       contractor,
-      count: data.count,
-      budget: data.totalBudget,
-      avgProgress: data.progressCount > 0 ? data.totalProgress / data.progressCount : 0
+      count: d.count,
+      budget: d.totalBudget,
+      avgProgress: d.progressCount > 0 ? d.totalProgress / d.progressCount : 0
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 20)
 
-  // Get totals from global statuses
-  const completed = globalStatuses.find(s => s.name === 'Completed')?.value || 0
-  const ongoing = globalStatuses.find(s => s.name === 'On-Going')?.value || 0
-
   return (
     <AppLayout title="Infrastructure Dashboard">
-      <KpiCards total={totalCount || 0} totalBudget={totalBudget} completed={completed} ongoing={ongoing} />
+      <KpiCards total={totalCount} totalBudget={totalBudget} completed={completed} ongoing={ongoing} />
 
       {/* First Row: Budget & Status */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>

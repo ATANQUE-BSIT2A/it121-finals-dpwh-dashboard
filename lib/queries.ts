@@ -2,116 +2,126 @@ import { supabase } from './supabase'
 import type { Project } from '@/types'
 import { REGIONS } from './regions'
 
-export async function fetchAllRows(selectQuery: any, maxRows: number = 10000) {
-  const pageSize = 1000;
-  const totalToFetch = maxRows; 
-  const numPages = Math.ceil(totalToFetch / pageSize);
-  const pages = Array.from({ length: numPages }, (_, i) => i);
+/**
+ * Robust fetcher that handles large datasets by chunking requests.
+ * Uses controlled concurrency and range queries to avoid timeouts.
+ */
+export async function fetchAllRows(selectQuery: any, maxRows: number = 300000) {
+  const pageSize = 10000;
   
+  // 1. Get total count first to plan chunks
+  const { count, error: countError } = await selectQuery.select('*', { count: 'exact', head: true });
+  if (countError) return [];
+  
+  const total = Math.min(count || 0, maxRows);
+  const numPages = Math.ceil(total / pageSize);
   const allData: any[] = [];
-  const concurrencyLimit = 2; // Further reduced for high stability
   
-  for (let i = 0; i < pages.length; i += concurrencyLimit) {
-    const chunk = pages.slice(i, i + concurrencyLimit);
-    try {
-      const results = await Promise.all(
-        chunk.map(page => 
-          selectQuery
-            .range(page * pageSize, (page + 1) * pageSize - 1)
-            .then((res: any) => {
-              if (res.error) throw res.error;
-              return res.data || [];
-            })
-        )
-      );
-      const flattened = results.flat();
-      if (flattened.length === 0) break; 
-      allData.push(...flattened);
-      if (flattened.length < chunk.length * pageSize) break; 
-    } catch (e) {
-      // Log more details but don't crash
-      console.error('Fetch chunk failed, continuing with partial data:', e);
-      continue; 
-    }
+  // 2. Fetch in batches with controlled concurrency (e.g., 3 parallel requests at a time)
+  const concurrency = 3; 
+  for (let i = 0; i < numPages; i += concurrency) {
+    const batch = Array.from({ length: Math.min(concurrency, numPages - i) }, (_, j) => i + j);
+    const results = await Promise.all(
+      batch.map(page => 
+        selectQuery
+          .range(page * pageSize, (page + 1) * pageSize - 1)
+          .then((res: any) => res.data || [])
+      )
+    );
+    allData.push(...results.flat());
   }
   
-  return allData.slice(0, maxRows);
+  return allData;
 }
 
 export async function getTotalBudget() {
-  const regions = await getBudgetByRegion();
-  return regions.reduce((sum, r) => sum + r.totalBudget, 0);
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('budget'));
+  return data.reduce((sum, r) => sum + (r.budget || 0), 0);
 }
 
 export async function getYearStats() {
-  const years = ['2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'];
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('infra_year, budget'));
+  const stats: Record<string, { count: number, totalBudget: number }> = {};
   
-  const results = await Promise.all(
-    years.map(async (year) => {
-      let totalBudget = 0;
-      let count = 0;
-      let start = 0;
-      const pageSize = 5000;
-      
-      while (true) {
-        const { data, error, count: yearCount } = await supabase
-          .from('dpwh_projects')
-          .select('budget', { count: 'exact' })
-          .eq('infra_year', year)
-          .range(start, start + pageSize - 1);
-          
-        if (error || !data || data.length === 0) {
-          if (start === 0 && yearCount) count = yearCount;
-          break;
-        }
-        
-        if (start === 0) count = yearCount || 0;
-        data.forEach(p => totalBudget += (p.budget || 0));
-        if (data.length < pageSize) break;
-        start += pageSize;
-      }
-      
-      return { year, count, totalBudget };
-    })
-  );
-
-  return results.filter(r => r.count > 0);
+  data.forEach(p => {
+    const year = p.infra_year || 'Unknown';
+    if (!stats[year]) stats[year] = { count: 0, totalBudget: 0 };
+    stats[year].count++;
+    stats[year].totalBudget += (p.budget || 0);
+  });
+  
+  return Object.entries(stats)
+    .map(([year, s]) => ({ year, count: s.count, totalBudget: s.totalBudget }))
+    .sort((a, b) => a.year.localeCompare(b.year));
 }
 
 export async function getStatusCounts() {
-  const statuses = ['Completed', 'On-Going', 'For Procurement', 'Not Yet Started', 'Terminated', 'Suspended'];
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('status'));
+  const counts: Record<string, number> = {};
   
-  const results = await Promise.all(
-    statuses.map(async (status) => {
-      const { count, error } = await supabase
-        .from('dpwh_projects')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', status);
-      return { name: status, value: count || 0 };
-    })
-  );
+  data.forEach(p => {
+    const status = p.status || 'Unknown';
+    counts[status] = (counts[status] || 0) + 1;
+  });
+  
+  return Object.entries(counts).map(([name, value]) => ({ name, value }));
+}
 
-  return results.filter(r => r.value > 0);
+export async function getBudgetByRegion() {
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('region, budget'));
+  const stats: Record<string, number> = {};
+  
+  data.forEach(p => {
+    const region = p.region || 'Unknown';
+    stats[region] = (stats[region] || 0) + (p.budget || 0);
+  });
+  
+  return Object.entries(stats)
+    .map(([region, totalBudget]) => ({ region, totalBudget }))
+    .sort((a, b) => b.totalBudget - a.totalBudget);
+}
+
+export async function getProjectsByCategory() {
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('category, budget'));
+  const stats: Record<string, { count: number, totalBudget: number }> = {};
+  
+  data.forEach(p => {
+    const cat = p.category || 'Unknown';
+    if (!stats[cat]) stats[cat] = { count: 0, totalBudget: 0 };
+    stats[cat].count++;
+    stats[cat].totalBudget += (p.budget || 0);
+  });
+  
+  return Object.entries(stats)
+    .map(([category, s]) => ({ category, count: s.count, totalBudget: s.totalBudget }))
+    .sort((a, b) => b.count - a.count);
 }
 
 export async function getDashboardStats() {
-  const [total, budgetSum, completed, ongoing, progressData] = await Promise.all([
-    supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
-    getTotalBudget(),
-    supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }).eq('status', 'Completed'),
-    supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }).eq('status', 'On-Going'),
-    fetchAllRows(supabase.from('dpwh_projects').select('progress')),
-  ]);
+  const allData = await fetchAllRows(supabase.from('dpwh_projects').select('budget, status, progress'));
+  
+  let totalBudget = 0;
+  let completed = 0;
+  let ongoing = 0;
+  let progressSum = 0;
+  let progressCount = 0;
 
-  const progressSum = progressData.filter(p => p.progress !== null).reduce((sum, p) => sum + (p.progress as number), 0) || 0;
-  const progressCount = progressData.filter(p => p.progress !== null).length || 1;
+  allData.forEach(p => {
+    totalBudget += (p.budget || 0);
+    if (p.status === 'Completed') completed++;
+    if (p.status === 'On-Going') ongoing++;
+    if (p.progress !== null) {
+      progressSum += p.progress;
+      progressCount++;
+    }
+  });
 
   return {
-    total: total.count || 0,
-    totalBudget: budgetSum,
-    completed: completed.count || 0,
-    ongoing: ongoing.count || 0,
-    avgProgress: progressSum / progressCount,
+    total: allData.length,
+    totalBudget,
+    completed,
+    ongoing,
+    avgProgress: progressCount > 0 ? progressSum / progressCount : 0,
   };
 }
 
@@ -185,86 +195,8 @@ export async function getProjectById(contractId: string) {
   return { data, error };
 }
 
-export async function getBudgetByRegion() {
-  const regions = REGIONS.map(r => r.value);
-  
-  const results = await Promise.all(
-    regions.map(async (region) => {
-      let total = 0;
-      let start = 0;
-      const pageSize = 5000;
-      
-      while (true) {
-        const { data, error } = await supabase
-          .from('dpwh_projects')
-          .select('budget')
-          .eq('region', region)
-          .range(start, start + pageSize - 1);
-          
-        if (error || !data || data.length === 0) break;
-        data.forEach(p => total += (p.budget || 0));
-        if (data.length < pageSize) break;
-        start += pageSize;
-      }
-      
-      return { region, totalBudget: total };
-    })
-  );
-
-  return results
-    .filter(r => r.totalBudget > 0)
-    .sort((a, b) => b.totalBudget - a.totalBudget);
-}
-
 export async function getProjectsByStatus() {
-  const statuses = ['Completed', 'On-Going', 'For Procurement', 'Not Yet Started', 'Terminated', 'Suspended'];
-  
-  const results = await Promise.all(
-    statuses.map(async (status) => {
-      const { count, error } = await supabase
-        .from('dpwh_projects')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', status);
-      return { status, count: count || 0 };
-    })
-  );
-
-  return results.filter(r => r.count > 0);
-}
-
-export async function getProjectsByCategory() {
-  const categories = await getCategories();
-  
-  const results = await Promise.all(
-    categories.map(async (category) => {
-      let totalBudget = 0;
-      let count = 0;
-      let start = 0;
-      const pageSize = 5000;
-      
-      while (true) {
-        const { data, error, count: catCount } = await supabase
-          .from('dpwh_projects')
-          .select('budget', { count: 'exact' })
-          .eq('category', category)
-          .range(start, start + pageSize - 1);
-          
-        if (error || !data || data.length === 0) {
-          if (start === 0 && catCount) count = catCount;
-          break;
-        }
-        
-        if (start === 0) count = catCount || 0;
-        data.forEach(p => totalBudget += (p.budget || 0));
-        if (data.length < pageSize) break;
-        start += pageSize;
-      }
-      
-      return { category, count, totalBudget };
-    })
-  );
-
-  return results.filter(r => r.count > 0).sort((a, b) => b.count - a.count);
+  return getStatusCounts();
 }
 
 export async function getProjectsByYear() {
