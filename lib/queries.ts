@@ -6,41 +6,56 @@ import { REGIONS } from './regions'
  * Robust fetcher that handles large datasets by chunking requests.
  * Uses controlled concurrency and range queries to avoid timeouts.
  */
-export async function fetchAllRows(selectQuery: any, maxRows: number = 300000) {
-  const pageSize = 10000;
+export async function fetchAllRows(columns: string = '*', maxRows: number = 300000, filter?: (query: any) => any) {
+  const pageSize = 5000; 
   
-  // 1. Get total count first to plan chunks
-  const { count, error: countError } = await selectQuery.select('*', { count: 'exact', head: true });
-  if (countError) return [];
+  // 1. Get count using a clean query
+  let countQuery = supabase.from('dpwh_projects').select('*', { count: 'exact', head: true });
+  if (filter) countQuery = filter(countQuery);
+  const { count, error: countError } = await countQuery;
+  if (countError) {
+    console.error('fetchAllRows count error:', countError);
+    return [];
+  }
   
   const total = Math.min(count || 0, maxRows);
   const numPages = Math.ceil(total / pageSize);
   const allData: any[] = [];
   
-  // 2. Fetch in batches with controlled concurrency (e.g., 3 parallel requests at a time)
-  const concurrency = 3; 
+  // 2. Fetch in batches with controlled concurrency
+  const concurrency = 5; 
   for (let i = 0; i < numPages; i += concurrency) {
-    const batch = Array.from({ length: Math.min(concurrency, numPages - i) }, (_, j) => i + j);
-    const results = await Promise.all(
-      batch.map(page => 
-        selectQuery
-          .range(page * pageSize, (page + 1) * pageSize - 1)
-          .then((res: any) => res.data || [])
-      )
-    );
-    allData.push(...results.flat());
+    try {
+      const batch = Array.from({ length: Math.min(concurrency, numPages - i) }, (_, j) => i + j);
+      const results = await Promise.all(
+        batch.map(page => {
+          let q = supabase.from('dpwh_projects').select(columns);
+          if (filter) q = filter(q);
+          return q
+            .range(page * pageSize, (page + 1) * pageSize - 1)
+            .then((res: any) => {
+              if (res.error) throw res.error;
+              return res.data || [];
+            });
+        })
+      );
+      allData.push(...results.flat());
+    } catch (e) {
+      console.error(`Batch fetch error at index ${i}:`, e);
+      // If a batch fails, we continue to try and get as much data as possible
+    }
   }
   
   return allData;
 }
 
 export async function getTotalBudget() {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('budget'));
+  const data = await fetchAllRows('budget');
   return data.reduce((sum, r) => sum + (r.budget || 0), 0);
 }
 
 export async function getYearStats() {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('infra_year, budget'));
+  const data = await fetchAllRows('infra_year, budget');
   const stats: Record<string, { count: number, totalBudget: number }> = {};
   
   data.forEach(p => {
@@ -56,7 +71,7 @@ export async function getYearStats() {
 }
 
 export async function getStatusCounts() {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('status'));
+  const data = await fetchAllRows('status');
   const counts: Record<string, number> = {};
   
   data.forEach(p => {
@@ -68,7 +83,7 @@ export async function getStatusCounts() {
 }
 
 export async function getBudgetByRegion() {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('region, budget'));
+  const data = await fetchAllRows('region, budget');
   const stats: Record<string, number> = {};
   
   data.forEach(p => {
@@ -82,7 +97,7 @@ export async function getBudgetByRegion() {
 }
 
 export async function getProjectsByCategory() {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('category, budget'));
+  const data = await fetchAllRows('category, budget');
   const stats: Record<string, { count: number, totalBudget: number }> = {};
   
   data.forEach(p => {
@@ -98,7 +113,7 @@ export async function getProjectsByCategory() {
 }
 
 export async function getDashboardStats() {
-  const allData = await fetchAllRows(supabase.from('dpwh_projects').select('budget, status, progress'));
+  const allData = await fetchAllRows('budget, status, progress');
   
   let totalBudget = 0;
   let completed = 0;
@@ -208,7 +223,7 @@ export function getRegions() {
 }
 
 export async function getProvincesByRegion(region: string) {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('province').eq('region', region));
+  const data = await fetchAllRows('province', 300000, (q) => q.eq('region', region));
   if (!data) return [];
 
   const provinces = new Set<string>();
@@ -219,7 +234,7 @@ export async function getProvincesByRegion(region: string) {
 }
 
 export async function getCategories() {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('category'));
+  const data = await fetchAllRows('category');
   if (!data) return [];
 
   const categories = new Set<string>();
@@ -230,7 +245,7 @@ export async function getCategories() {
 }
 
 export async function getTopContractors(limit: number = 20) {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('contractor, budget, progress'));
+  const data = await fetchAllRows('contractor, budget, progress');
   if (!data) return [];
 
   const contractorData: Record<string, { count: number; totalBudget: number; totalProgress: number; progressCount: number }> = {};
