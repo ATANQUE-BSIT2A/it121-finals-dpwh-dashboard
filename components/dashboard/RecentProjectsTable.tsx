@@ -20,18 +20,18 @@ export default function RecentProjectsTable({ data }: { data: any[] }) {
           <tbody>
             {data.map(p => (
               <tr key={p.contract_id} onClick={() => setSelected(p)}>
-                <td style={{ color: '#8b949e', fontFamily: 'monospace', fontSize: '0.75rem' }}>{p.contract_id}</td>
-                <td style={{ maxWidth: 280 }}>{truncate(p.description, 65)}</td>
-                <td style={{ color: '#8b949e', whiteSpace: 'nowrap' }}>{p.region}</td>
-                <td style={{ color: '#8b949e', whiteSpace: 'nowrap' }}>{p.category}</td>
-                <td style={{ whiteSpace: 'nowrap' }}>{formatPeso(p.budget)}</td>
+                <td style={{ color: '#e6edf3', fontFamily: 'monospace', fontSize: '0.75rem' }}>{p.contract_id}</td>
+                <td style={{ maxWidth: 280, color: '#f5f5f7' }}>{truncate(p.description, 65)}</td>
+                <td style={{ color: '#e6edf3', whiteSpace: 'nowrap' }}>{p.region}</td>
+                <td style={{ color: '#e6edf3', whiteSpace: 'nowrap' }}>{p.category}</td>
+                <td style={{ whiteSpace: 'nowrap', color: '#f5f5f7' }}>{formatPeso(p.budget)}</td>
                 <td><span style={statusBadgeStyle(p.status)}>{p.status}</span></td>
                 <td style={{ minWidth: 100 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div className="progress-track" style={{ flex: 1 }}>
                       <div className="progress-fill" style={{ width: `${p.progress || 0}%`, background: progressColor(p.progress || 0) }} />
                     </div>
-                    <span style={{ fontSize: '0.7rem', color: '#8b949e', minWidth: 28 }}>{p.progress || 0}%</span>
+                    <span style={{ fontSize: '0.7rem', color: '#f5f5f7', minWidth: 28 }}>{p.progress || 0}%</span>
                   </div>
                 </td>
               </tr>

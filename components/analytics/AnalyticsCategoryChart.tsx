@@ -35,6 +35,7 @@ export default function AnalyticsCategoryChart({ data }: { data: any[] }) {
           />
           <Tooltip
             contentStyle={{ background: '#1c1c1e', border: '1px solid #38383a', borderRadius: 12, color: '#f5f5f7', fontSize: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
+            itemStyle={{ color: '#f5f5f7' }}
             formatter={(v: any, name: any) => [Number(v).toLocaleString(), name === 'count' ? 'Projects' : 'Budget']}
           />
           <Bar dataKey="count" fill="#0a84ff" radius={[0, 4, 4, 0]} maxBarSize={30} name="count" />

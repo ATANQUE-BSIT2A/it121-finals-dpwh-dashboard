@@ -24,6 +24,7 @@ export default async function DashboardPage() {
     fetchAllRows(supabase.from('dpwh_projects'), 50000),
     supabase.from('dpwh_projects')
       .select('contract_id, description, region, category, budget, status, progress')
+      .not('start_date', 'is', null)
       .order('start_date', { ascending: false })
       .limit(10),
     getTotalBudget(),

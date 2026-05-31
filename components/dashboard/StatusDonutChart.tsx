@@ -45,7 +45,7 @@ export default function StatusDonutChart({ data }: Props) {
       {sorted.map(entry => (
         <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 12, height: 12, borderRadius: '50%', background: getColor(entry.name), flexShrink: 0 }} />
-          <span style={{ fontSize: 13, color: '#86868b', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 13, color: '#e6edf3', whiteSpace: 'nowrap' }}>
             {entry.name}
           </span>
           <span style={{ fontSize: 13, color: '#f5f5f7', fontWeight: 700, marginLeft: 'auto', paddingLeft: 12 }}>
@@ -80,6 +80,7 @@ export default function StatusDonutChart({ data }: Props) {
             </Pie>
             <Tooltip
               contentStyle={{ background: '#1c1c1e', border: '1px solid #38383a', borderRadius: 12, color: '#f5f5f7', fontSize: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
+              itemStyle={{ color: '#f5f5f7' }}
               formatter={(v: any, name: any) => [Number(v).toLocaleString(), String(name)]}
             />
           </PieChart>

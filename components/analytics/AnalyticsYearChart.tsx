@@ -18,18 +18,19 @@ export default function AnalyticsYearChart({ data }: { data: any[] }) {
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 0, right: 16, bottom: 0, left: 8 }}>
           <CartesianGrid vertical={false} stroke="#21262d" />
-          <XAxis dataKey="year" tick={{ fill: '#8b949e', fontSize: 10 }} tickLine={false} axisLine={false} />
+          <XAxis dataKey="year" tick={{ fill: '#e6edf3', fontSize: 10 }} tickLine={false} axisLine={false} />
           <YAxis
-            tick={{ fill: '#8b949e', fontSize: 10 }}
+            tick={{ fill: '#e6edf3', fontSize: 10 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
           />
           <Tooltip
             contentStyle={{ background: '#1c2128', border: '1px solid #30363d', borderRadius: 8, color: '#e6edf3', fontSize: 12 }}
+            itemStyle={{ color: '#e6edf3' }}
             formatter={(v: any, name: any) => [Number(v).toLocaleString(), String(name)]}
           />
-          <Legend formatter={(v) => <span style={{ color: '#8b949e', fontSize: 11 }}>{v}</span>} />
+          <Legend formatter={(v) => <span style={{ color: '#e6edf3', fontSize: 11 }}>{v}</span>} />
           {allStatuses.map(s => {
             const st = STATUSES.find(x => x.value === s)
             return <Bar key={s} dataKey={s} stackId="a" fill={st?.color || '#8b949e'} name={s} />

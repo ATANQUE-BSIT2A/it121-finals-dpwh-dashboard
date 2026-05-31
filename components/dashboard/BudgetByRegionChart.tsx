@@ -36,20 +36,21 @@ export default function BudgetByRegionChart({ data }: Props) {
           <CartesianGrid horizontal={false} stroke="#2c2c2e" />
           <XAxis
             type="number"
-            tick={{ fill: '#86868b', fontSize: 12 }}
+            tick={{ fill: '#e6edf3', fontSize: 12 }}
             tickLine={false} axisLine={false}
             tickFormatter={formatBudget}
           />
           <YAxis
             type="category"
             dataKey="label"
-            tick={{ fill: '#86868b', fontSize: 13 }}
+            tick={{ fill: '#e6edf3', fontSize: 13 }}
             tickLine={false}
             axisLine={false}
             width={110}
           />
           <Tooltip
             contentStyle={{ background: '#1c1c1e', border: '1px solid #38383a', borderRadius: 12, color: '#f5f5f7', fontSize: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
+            itemStyle={{ color: '#f5f5f7' }}
             formatter={(v: any) => [formatBudget(Number(v)), 'Budget']}
             labelFormatter={(label) => {
               const match = labeled.find(d => d.label === label)
