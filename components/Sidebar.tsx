@@ -21,14 +21,14 @@ export default function Sidebar() {
         <Image
           src="/logos/DPWH.png"
           alt="DPWH"
-          width={56}
-          height={56}
+          width={100}
+          height={100}
           style={{ objectFit: 'contain', flexShrink: 0 }}
           priority
         />
         <div>
-          <div style={{ fontSize: '1rem', fontWeight: 700, color: '#e6edf3', lineHeight: 1.2 }}>DPWH</div>
-          <div style={{ fontSize: '0.75rem', color: '#8b949e', lineHeight: 1.2 }}>Infrastructure Dashboard</div>
+          <div style={{ fontSize: '1.125rem', fontWeight: 700, color: '#e6edf3', lineHeight: 1.2 }}>DPWH</div>
+          <div style={{ fontSize: '0.8rem', color: '#8b949e', lineHeight: 1.2 }}>Damo Project Waay Human Dashboard</div>
         </div>
       </div>
 
