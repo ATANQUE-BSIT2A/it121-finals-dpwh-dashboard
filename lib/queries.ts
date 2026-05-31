@@ -29,9 +29,9 @@ export async function fetchAllRows(columns: string = '*', maxRows: number = 3000
       const batch = Array.from({ length: Math.min(concurrency, numPages - i) }, (_, j) => i + j);
       const results = await Promise.all(
         batch.map(page => {
-          let q = supabase.from('dpwh_projects').select(columns);
-          if (filter) q = filter(q);
-          return q
+          return supabase
+            .from('dpwh_projects')
+            .select('*')
             .range(page * pageSize, (page + 1) * pageSize - 1)
             .then((res: any) => {
               if (res.error) throw res.error;
