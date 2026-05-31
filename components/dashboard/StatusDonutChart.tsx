@@ -7,6 +7,7 @@ const COLORS: Record<string, string> = {
   'On Going': '#58a6ff',
   'Suspended': '#d29922',
   'Terminated': '#f85149',
+  'For Procurement': '#f0883e',
 }
 
 export default function StatusDonutChart({ data }: { data: { name: string; value: number }[] }) {
@@ -14,7 +15,17 @@ export default function StatusDonutChart({ data }: { data: { name: string; value
     <div style={{ width: '100%', height: 260 }}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
-          <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={55} outerRadius={90} paddingAngle={2}>
+          <Pie 
+            data={data} 
+            dataKey="value" 
+            nameKey="name" 
+            cx="50%" 
+            cy="45%" 
+            innerRadius={55} 
+            outerRadius={90} 
+            paddingAngle={2}
+            minAngle={3}
+          >
             {data.map((entry) => (
               <Cell key={entry.name} fill={COLORS[entry.name] || '#8b949e'} />
             ))}
@@ -26,6 +37,8 @@ export default function StatusDonutChart({ data }: { data: { name: string; value
           <Legend
             formatter={(v) => <span style={{ color: '#8b949e', fontSize: 11 }}>{v}</span>}
             iconType="circle" iconSize={8}
+            verticalAlign="bottom"
+            height={36}
           />
         </PieChart>
       </ResponsiveContainer>

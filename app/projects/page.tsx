@@ -38,10 +38,12 @@ export default function ProjectsPage() {
   // Load filter options once
   useEffect(() => {
     const loadOptions = async () => {
-      const [{ data: c }, { data: y }] = await Promise.all([
+      const [{ data: c }, { data: y }, { data: r }] = await Promise.all([
         supabase.from('dpwh_projects').select('category').not('category','is',null),
         supabase.from('dpwh_projects').select('infra_year').not('infra_year','is',null),
+        supabase.from('dpwh_projects').select('region').not('region','is',null).limit(100),
       ])
+      console.log('Unique regions in Supabase:', [...new Set(r?.map((x: any) => x.region))])
       setCategories([...new Set(c?.map((x: any) => x.category))].sort() as string[])
       setYears([...new Set(y?.map((x: any) => x.infra_year))].sort().reverse() as string[])
     }
@@ -89,7 +91,7 @@ export default function ProjectsPage() {
   const hasFilters = search || region || province || category || status || year
   const totalPages = Math.ceil(totalCount / PER_PAGE)
 
-  const statuses = ['Completed', 'On-Going', 'Suspended', 'Terminated']
+  const statuses = ['Completed', 'On-Going', 'Suspended', 'Terminated', 'For Procurement']
   const sortOptions = [
     { value: 'start_date:desc',  label: 'Newest First' },
     { value: 'start_date:asc',   label: 'Oldest First' },
@@ -103,14 +105,14 @@ export default function ProjectsPage() {
     <AppLayout title="Projects">
       {/* Filter bar */}
       <div className="card-elevated" style={{ marginBottom: '1rem', padding: '0.875rem 1rem' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '0.75rem', alignItems: 'center', overflowX: 'auto' }}>
 
           {/* Search */}
-          <div style={{ position: 'relative', flexGrow: 1, minWidth: 180 }}>
+          <div style={{ position: 'relative', flexGrow: 1, minWidth: 220, flexShrink: 1 }}>
             <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#484f58' }} />
             <input
               className="input"
-              style={{ paddingLeft: 30, fontSize: '0.8rem', height: 34 }}
+              style={{ paddingLeft: 30, fontSize: '0.8rem', height: 34, width: '100%' }}
               placeholder="Search by name, ID, or contractor…"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -118,33 +120,33 @@ export default function ProjectsPage() {
           </div>
 
           {/* Region */}
-          <select className="input" style={{ width: 160, height: 34, fontSize: '0.8rem' }} value={region} onChange={e => setRegion(e.target.value)}>
+          <select className="input" style={{ minWidth: 160, width: 160, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={region} onChange={e => setRegion(e.target.value)}>
             <option value="">All Regions</option>
             {regions.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
 
           {/* Province — only if region selected */}
           {region && (
-            <select className="input" style={{ width: 180, height: 34, fontSize: '0.8rem' }} value={province} onChange={e => setProvince(e.target.value)}>
+            <select className="input" style={{ minWidth: 180, width: 180, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={province} onChange={e => setProvince(e.target.value)}>
               <option value="">All Provinces</option>
               {provinces.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           )}
 
           {/* Category */}
-          <select className="input" style={{ width: 180, height: 34, fontSize: '0.8rem' }} value={category} onChange={e => setCategory(e.target.value)}>
+          <select className="input" style={{ minWidth: 180, width: 180, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={category} onChange={e => setCategory(e.target.value)}>
             <option value="">All Categories</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
 
           {/* Status */}
-          <select className="input" style={{ width: 150, height: 34, fontSize: '0.8rem' }} value={status} onChange={e => setStatus(e.target.value)}>
+          <select className="input" style={{ minWidth: 150, width: 150, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={status} onChange={e => setStatus(e.target.value)}>
             <option value="">All Statuses</option>
             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
 
           {/* Year */}
-          <select className="input" style={{ width: 110, height: 34, fontSize: '0.8rem' }} value={year} onChange={e => setYear(e.target.value)}>
+          <select className="input" style={{ minWidth: 110, width: 110, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={year} onChange={e => setYear(e.target.value)}>
             <option value="">All Years</option>
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
