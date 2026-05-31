@@ -68,7 +68,7 @@ export default function ProjectsPage() {
     setErrorMsg('')
     try {
       let q = supabase.from('dpwh_projects')
-        .select('contract_id,description,region,province,category,status,budget,progress,start_date,contractor', { count: 'estimated' })
+        .select('contract_id,description,region,province,category,status,budget,progress,start_date,contractor', { count: 'exact' }) // Changed from 'estimated' to 'exact' for more reliable RSC
 
       if (search.trim()) {
         q = q.or(`description.ilike.%${search}%,contract_id.ilike.%${search}%,contractor.ilike.%${search}%,province.ilike.%${search}%,program_name.ilike.%${search}%`)

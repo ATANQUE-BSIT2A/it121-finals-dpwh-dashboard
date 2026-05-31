@@ -8,7 +8,7 @@ import AnalyticsCategoryChart from '@/components/analytics/AnalyticsCategoryChar
 import AnalyticsProgressChart from '@/components/analytics/AnalyticsProgressChart'
 import AnalyticsContractorsTable from '@/components/analytics/AnalyticsContractorsTable'
 import { supabase } from '@/lib/supabase'
-import { fetchAllRows } from '@/lib/queries'
+import { fetchAllRows, getTotalBudget, getStatusCounts } from '@/lib/queries'
 
 export const revalidate = 300
 
@@ -17,36 +17,40 @@ export default async function DashboardPage() {
     { count: totalCount },
     statsData,
     { data: recentData },
+    fullBudget,
+    globalStatuses,
   ] = await Promise.all([
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
-    fetchAllRows(supabase.from('dpwh_projects').select('contract_id, region, status, budget, infra_year, category, progress, contractor')),
+    fetchAllRows(supabase.from('dpwh_projects'), 50000),
     supabase.from('dpwh_projects')
       .select('contract_id, description, region, category, budget, status, progress')
       .order('start_date', { ascending: false })
       .limit(10),
+    getTotalBudget(),
+    getStatusCounts(),
   ])
 
-  // Calculate ALL stats
+  // Calculate stats from sample
   const budgetByRegion: Record<string, number> = {}
-  const statusCounts: Record<string, number> = {}
+  const statusCountsFromSample: Record<string, number> = {}
   const yearStats: Record<string, { count: number, budget: number }> = {}
   const categoryMap: Record<string, { count: number, budget: number }> = {}
   const progressBuckets = [0,0,0,0,0,0,0,0,0,0]
   const contractorMap: Record<string, { count: number, totalBudget: number, totalProgress: number, progressCount: number }> = {}
-  let totalBudget = 0
+  
+  // Use the reliable fullBudget for the KPI
+  let totalBudget = fullBudget || 0
 
   for (const p of statsData || []) {
     const b = p.budget || 0
-    totalBudget += b
-
     // Budget by Region
     if (p.region) {
       budgetByRegion[p.region] = (budgetByRegion[p.region] || 0) + b
     }
 
-    // Status Counts
+    // Status Counts from sample (fallback)
     if (p.status) {
-      statusCounts[p.status] = (statusCounts[p.status] || 0) + 1
+      statusCountsFromSample[p.status] = (statusCountsFromSample[p.status] || 0) + 1
     }
 
     // Year Stats
@@ -89,7 +93,11 @@ export default async function DashboardPage() {
     .sort((a, b) => b.total - a.total)
     .slice(0, 10)
 
-  const byStatus = Object.entries(statusCounts).map(([name, value]) => ({ name, value }))
+  // Use global statuses for the donut chart
+  const byStatus = globalStatuses.length > 0 
+    ? globalStatuses 
+    : Object.entries(statusCountsFromSample).map(([name, value]) => ({ name, value }))
+
   const byYear = Object.entries(yearStats)
     .map(([year, { count, budget }]) => ({ year, count, budget }))
     .sort((a, b) => a.year.localeCompare(b.year))
@@ -115,8 +123,9 @@ export default async function DashboardPage() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 20)
 
-  const completed = statusCounts['Completed'] || 0
-  const ongoing = (statusCounts['On-Going'] || 0) + (statusCounts['On Going'] || 0)
+  // Get totals from global statuses
+  const completed = globalStatuses.find(s => s.name === 'Completed')?.value || 0
+  const ongoing = globalStatuses.find(s => s.name === 'On-Going')?.value || 0
 
   return (
     <AppLayout title="Infrastructure Dashboard">

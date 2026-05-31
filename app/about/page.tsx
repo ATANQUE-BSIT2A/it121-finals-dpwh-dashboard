@@ -39,8 +39,8 @@ export default function AboutPage() {
           Damo Project Waay Human Dashboard
         </h2>
         <div style={{ color: '#8b949e', fontSize: '1rem', lineHeight: '1.8', marginBottom: '1rem' }}>
-          <p style={{ marginBottom: '1rem' }}>
-            About the Project
+          <p style={{ marginBottom: '1rem', fontWeight: 'bold', color: '#e6edf3' }}>
+            About this project
           </p>
           <p style={{ marginBottom: '1rem' }}>
             The DPWH Infrastructure Dashboard is an interactive, data-driven web application developed as a final project for IT 121.

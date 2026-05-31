@@ -2,23 +2,96 @@ import { supabase } from './supabase'
 import type { Project } from '@/types'
 
 export async function fetchAllRows(selectQuery: any, maxRows: number = 10000) {
-  const allData: any[] = [];
-  let page = 0;
   const pageSize = 1000;
   
-  while (allData.length < maxRows) {
-    const { data, error } = await selectQuery.range(page * pageSize, (page + 1) * pageSize - 1);
-    if (error) {
-      console.error('Error fetching rows:', error);
-      break;
+  // Clone the query to get count without ranges
+  // We use a separate select to avoid modifying the original query's columns if it was already set
+  const { count, error: countError } = await selectQuery.select('*', { count: 'exact', head: true });
+  
+  if (countError) {
+    console.error('Error getting count:', countError);
+    return [];
+  }
+
+  const totalToFetch = Math.min(count || 0, maxRows);
+  const numPages = Math.ceil(totalToFetch / pageSize);
+  const pages = Array.from({ length: numPages }, (_, i) => i);
+  
+  const allData: any[] = [];
+  const concurrencyLimit = 5; // Reduced concurrency for stability
+  
+  for (let i = 0; i < pages.length; i += concurrencyLimit) {
+    const chunk = pages.slice(i, i + concurrencyLimit);
+    try {
+      const results = await Promise.all(
+        chunk.map(page => {
+          // IMPORTANT: Create a fresh query for each page to avoid sharing state
+          const pageQuery = selectQuery.select('*');
+          return pageQuery
+            .order('contract_id', { ascending: true }) // Stable order for ranges
+            .range(page * pageSize, (page + 1) * pageSize - 1)
+            .then((res: any) => {
+              if (res.error) throw res.error;
+              return res.data || [];
+            });
+        })
+      );
+      allData.push(...results.flat());
+    } catch (e) {
+      console.error('Error in parallel fetch chunk:', e);
+      break; // Stop if we hit a timeout
     }
-    if (!data || data.length === 0) break;
-    allData.push(...data);
-    if (data.length < pageSize) break;
-    page++;
   }
   
   return allData.slice(0, maxRows);
+}
+
+export async function getTotalBudget() {
+  const { count, error: countError } = await supabase
+    .from('dpwh_projects')
+    .select('*', { count: 'exact', head: true });
+
+  if (countError || !count) return 0;
+
+  const pageSize = 1000;
+  const numPages = Math.ceil(count / pageSize);
+  const pages = Array.from({ length: numPages }, (_, i) => i);
+  
+  let total = 0;
+  const concurrencyLimit = 20; // Higher concurrency for just one column
+  
+  for (let i = 0; i < pages.length; i += concurrencyLimit) {
+    const chunk = pages.slice(i, i + concurrencyLimit);
+    const results = await Promise.all(
+      chunk.map(page => 
+        supabase
+          .from('dpwh_projects')
+          .select('budget')
+          .order('contract_id', { ascending: true }) // Stable order for ranges
+          .range(page * pageSize, (page + 1) * pageSize - 1)
+          .then(res => res.data || [])
+      )
+    );
+    results.flat().forEach(p => total += (p.budget || 0));
+  }
+  
+  return total;
+}
+
+export async function getStatusCounts() {
+  const statuses = ['Completed', 'On-Going', 'For Procurement', 'Not Yet Started', 'Terminated', 'Suspended'];
+  
+  const results = await Promise.all(
+    statuses.map(async (status) => {
+      const { count, error } = await supabase
+        .from('dpwh_projects')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', status);
+      return { name: status, value: count || 0 };
+    })
+  );
+
+  return results.filter(r => r.value > 0);
 }
 
 export async function getDashboardStats() {

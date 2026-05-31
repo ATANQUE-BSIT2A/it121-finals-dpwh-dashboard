@@ -1,5 +1,6 @@
 import AppLayout from '@/components/AppLayout'
 import { supabase } from '@/lib/supabase'
+import { fetchAllRows, getTotalBudget } from '@/lib/queries'
 import AnalyticsCategoryChart from '@/components/analytics/AnalyticsCategoryChart'
 import AnalyticsYearChart from '@/components/analytics/AnalyticsYearChart'
 import AnalyticsProgressChart from '@/components/analytics/AnalyticsProgressChart'
@@ -8,9 +9,13 @@ import AnalyticsContractorsTable from '@/components/analytics/AnalyticsContracto
 export const revalidate = 300
 
 export default async function AnalyticsPage() {
-  const { data: projects } = await supabase.from('dpwh_projects')
-    .select('category, status, infra_year, progress, budget, contractor')
-    .limit(5000)
+  const [projects, totalBudget] = await Promise.all([
+      fetchAllRows(
+        supabase.from('dpwh_projects'),
+        50000
+      ),
+      getTotalBudget()
+    ])
 
   const data = projects || []
 

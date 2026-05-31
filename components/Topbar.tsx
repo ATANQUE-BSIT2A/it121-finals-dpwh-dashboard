@@ -8,7 +8,7 @@ export default function Topbar({ title }: { title: string }) {
 
   return (
     <div className="topbar">
-      <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#e6edf3', flexShrink: 0 }}>{title}</span>
+      <span style={{ fontSize: '1.25rem', fontWeight: 600, color: '#e6edf3', flexShrink: 0 }}>{title}</span>
       <div style={{ flex: 1 }} />
       {/* Date */}
       <span style={{ fontSize: '0.75rem', color: '#484f58', flexShrink: 0 }}>{now}</span>
