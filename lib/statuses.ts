@@ -6,8 +6,8 @@ export const STATUSES: { label: string; value: string; color: string; bg: string
   { label: 'Completed',       value: 'Completed',       color: '#30d158', bg: 'rgba(48,209,88,0.15)',   border: 'rgba(48,209,88,0.25)'   },
   { label: 'On-Going',        value: 'On-Going',        color: '#0a84ff', bg: 'rgba(10,132,255,0.15)',  border: 'rgba(10,132,255,0.25)'  },
   { label: 'For Procurement', value: 'For Procurement', color: '#ffd60a', bg: 'rgba(255,214,10,0.15)',  border: 'rgba(255,214,10,0.25)'  },
-  { label: 'Not Yet Started', value: 'Not Yet Started', color: '#ffd60a', bg: 'rgba(255,214,10,0.15)',  border: 'rgba(255,214,10,0.25)'  },
-  { label: 'Suspended',       value: 'Suspended',       color: '#ffd60a', bg: 'rgba(255,214,10,0.15)',  border: 'rgba(255,214,10,0.25)'  },
+  { label: 'Not Yet Started', value: 'Not Yet Started', color: '#ff9f0a', bg: 'rgba(255,159,10,0.15)',  border: 'rgba(255,159,10,0.25)'  },
+  { label: 'Suspended',       value: 'Suspended',       color: '#bf5af2', bg: 'rgba(191,90,242,0.15)',  border: 'rgba(191,90,242,0.25)'  },
   { label: 'Terminated',      value: 'Terminated',      color: '#ff453a', bg: 'rgba(255,69,58,0.15)',   border: 'rgba(255,69,58,0.25)'   },
   { label: 'Under Warranty',  value: 'Under Warranty',  color: '#64d2ff', bg: 'rgba(100,210,255,0.15)', border: 'rgba(100,210,255,0.25)' },
 ]
