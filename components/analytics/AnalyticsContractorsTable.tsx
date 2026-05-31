@@ -1,6 +1,8 @@
 export default function AnalyticsContractorsTable({ data }: { data: any[] }) {
-  const formatPeso = (v: number) =>
-    v >= 1e9 ? `₱${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `₱${(v / 1e6).toFixed(2)}M` : `₱${v.toLocaleString()}`
+  const formatPeso = (v: number) => {
+    if (v === undefined || v === null) return '₱0'
+    return v >= 1e9 ? `₱${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `₱${(v / 1e6).toFixed(2)}M` : `₱${v.toLocaleString()}`
+  }
 
   return (
     <div style={{ overflowX: 'auto' }}>
@@ -18,10 +20,10 @@ export default function AnalyticsContractorsTable({ data }: { data: any[] }) {
           {data.map((row, i) => (
             <tr key={row.contractor}>
               <td style={{ color: '#484f58', width: 32 }}>{i + 1}</td>
-              <td style={{ maxWidth: 320 }}>{row.contractor}</td>
-              <td style={{ textAlign: 'right', color: '#58a6ff', fontWeight: 600 }}>{row.count.toLocaleString()}</td>
+              <td style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.contractor}</td>
+              <td style={{ textAlign: 'right', color: '#58a6ff', fontWeight: 600 }}>{(row.count || 0).toLocaleString()}</td>
               <td style={{ textAlign: 'right', color: '#3fb950', fontWeight: 600 }}>{formatPeso(row.budget)}</td>
-              <td style={{ textAlign: 'right', color: '#e6edf3' }}>{row.avgProgress.toFixed(1)}%</td>
+              <td style={{ textAlign: 'right', color: '#e6edf3' }}>{(row.avgProgress || 0).toFixed(1)}%</td>
             </tr>
           ))}
         </tbody>

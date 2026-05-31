@@ -9,16 +9,16 @@ export const revalidate = 300
 
 export default async function AnalyticsPage() {
   const { data: projects } = await supabase.from('dpwh_projects')
-    .select('category, status, infra_year, start_year, progress, budget, contractor')
+    .select('category, status, infra_year, progress, budget, contractor')
     .limit(5000)
 
   const data = projects || []
 
   // Calculate stats
   const categoryMap: Record<string, { count: number, budget: number }> = {}
-  const yearMap: Record<string, { count: number, budget: number }> = {}
+  const yearMap: Record<string, { [status: string]: number, count: number, budget: number }> = {}
   const progressBuckets = [0,0,0,0,0,0,0,0,0,0]
-  const contractorMap: Record<string, number> = {}
+  const contractorMap: Record<string, { count: number, budget: number, totalProgress: number }> = {}
 
   for (const p of data) {
     // Category
@@ -29,11 +29,14 @@ export default async function AnalyticsPage() {
     }
 
     // Year
-    const y = p.infra_year || p.start_year
+    const y = p.infra_year
     if (y) {
       if (!yearMap[y]) yearMap[y] = { count: 0, budget: 0 }
       yearMap[y].count += 1
       yearMap[y].budget += p.budget || 0
+      if (p.status) {
+        yearMap[y][p.status] = (yearMap[y][p.status] || 0) + 1
+      }
     }
 
     // Progress
@@ -43,7 +46,10 @@ export default async function AnalyticsPage() {
 
     // Contractor
     if (p.contractor) {
-      contractorMap[p.contractor] = (contractorMap[p.contractor] || 0) + 1
+      if (!contractorMap[p.contractor]) contractorMap[p.contractor] = { count: 0, budget: 0, totalProgress: 0 }
+      contractorMap[p.contractor].count += 1
+      contractorMap[p.contractor].budget += p.budget || 0
+      contractorMap[p.contractor].totalProgress += prog
     }
   }
 
@@ -54,16 +60,22 @@ export default async function AnalyticsPage() {
     .slice(0, 15)
 
   const yearData = Object.entries(yearMap)
-    .map(([year, { count, budget }]) => ({ year, count, budget }))
+    .map(([year, stats]) => ({ year, ...stats }))
     .sort((a, b) => a.year.localeCompare(b.year))
 
   const progressData = progressBuckets.map((count, i) => ({
     range: `${i*10}–${(i+1)*10}%`,
     count,
+    min: i * 10
   }))
 
   const contractorData = Object.entries(contractorMap)
-    .map(([name, count]) => ({ name, count }))
+    .map(([contractor, { count, budget, totalProgress }]) => ({
+      contractor,
+      count,
+      budget,
+      avgProgress: totalProgress / count
+    }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 20)
 
