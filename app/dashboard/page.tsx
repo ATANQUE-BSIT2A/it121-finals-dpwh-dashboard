@@ -9,86 +9,73 @@ import { supabase } from '@/lib/supabase'
 export const revalidate = 300
 
 export default async function DashboardPage() {
-  const [
-    { count: totalCount },
-    { data: budgetByRegionAgg },
-    { data: statusAgg },
-    { data: yearAgg },
-    { data: budgetSumAgg },
-    { data: recentData },
-  ] = await Promise.all([
-    supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
+  const [{ count: totalCount }, { data: statsData }, { data: recentData }] = await Promise.all([
+    supabase.from('dpwh_projects').select('*', { count: 'estimated', head: true }),
     supabase.from('dpwh_projects')
-      .select('region, total:budget.sum()')
-      .not('region', 'is', null),
-    supabase.from('dpwh_projects')
-      .select('status, count:contract_id.count()')
-      .not('status', 'is', null),
-    supabase.from('dpwh_projects')
-      .select('infra_year, count:contract_id.count(), budget:budget.sum()')
-      .not('infra_year', 'is', null),
-    supabase.from('dpwh_projects')
-      .select('total:budget.sum()'),
+      .select('contract_id, region, status, budget, infra_year')
+      .limit(5000),
     supabase.from('dpwh_projects')
       .select('contract_id, description, region, category, budget, status, progress')
       .order('start_date', { ascending: false })
       .limit(10),
   ])
 
-  const budgetByRegion = (budgetByRegionAgg || [])
-    .map((r: any) => ({ region: r.region, total: Number(r.total || 0) }))
+  // Calculate stats
+  const budgetByRegion: Record<string, number> = {}
+  const statusCounts: Record<string, number> = {}
+  const yearStats: Record<string, { count: number, budget: number }> = {}
+  let totalBudget = 0
+
+  for (const p of statsData || []) {
+    const b = p.budget || 0
+    totalBudget += b
+
+    if (p.region) {
+      budgetByRegion[p.region] = (budgetByRegion[p.region] || 0) + b
+    }
+    if (p.status) {
+      statusCounts[p.status] = (statusCounts[p.status] || 0) + 1
+    }
+    if (p.infra_year) {
+      const y = p.infra_year
+      if (!yearStats[y]) yearStats[y] = { count: 0, budget: 0 }
+      yearStats[y].count += 1
+      yearStats[y].budget += b
+    }
+  }
+
+  const budgetByRegionList = Object.entries(budgetByRegion)
+    .map(([region, total]) => ({ region, total }))
     .sort((a, b) => b.total - a.total)
     .slice(0, 10)
 
-  const statusMap: Record<string, number> = {}
-  for (const row of statusAgg || []) {
-    const s = row.status || 'Unknown'
-    statusMap[s] = Number(row.count || 0)
-  }
-  const byStatus = Object.entries(statusMap).map(([name, value]) => ({ name, value }))
-
-  const byYear = (yearAgg || [])
-    .map((row: any) => ({
-      year: row.infra_year || 'Unknown',
-      count: Number(row.count || 0),
-      budget: Number(row.budget || 0),
-    }))
+  const byStatus = Object.entries(statusCounts).map(([name, value]) => ({ name, value }))
+  const byYear = Object.entries(yearStats)
+    .map(([year, { count, budget }]) => ({ year, count, budget }))
     .sort((a, b) => a.year.localeCompare(b.year))
 
-  const totalBudget = Number(budgetSumAgg?.[0]?.total || 0)
-  const completedCount = statusMap['Completed'] || 0
-  const ongoingCount = statusMap['On-Going'] || statusMap['On Going'] || 0
+  const completed = statusCounts['Completed'] || 0
+  const ongoing = (statusCounts['On-Going'] || 0) + (statusCounts['On Going'] || 0)
 
   return (
     <AppLayout title="Infrastructure Dashboard">
-      <KpiCards
-        total={totalCount || 0}
-        totalBudget={totalBudget}
-        completed={completedCount}
-        ongoing={ongoingCount}
-      />
+      <KpiCards total={totalCount || 0} totalBudget={totalBudget} completed={completed} ongoing={ongoing} />
 
       {/* Charts row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
         <div className="card-elevated">
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>
-            Budget by Region (Top 10)
-          </h3>
-          <BudgetByRegionChart data={budgetByRegion} />
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>Budget by Region (Top 10)</h3>
+          <BudgetByRegionChart data={budgetByRegionList} />
         </div>
         <div className="card-elevated">
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>
-            Projects by Status
-          </h3>
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>Projects by Status</h3>
           <StatusDonutChart data={byStatus} />
         </div>
       </div>
 
       {/* Year chart */}
       <div className="card-elevated" style={{ marginTop: '1rem' }}>
-        <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>
-          Projects by Year
-        </h3>
+        <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>Projects by Year</h3>
         <ProjectsByYearChart data={byYear} />
       </div>
 

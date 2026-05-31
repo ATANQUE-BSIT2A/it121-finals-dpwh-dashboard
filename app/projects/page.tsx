@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import AppLayout from '@/components/AppLayout'
 import ProjectDrawer from '@/components/ProjectDrawer'
@@ -17,10 +17,8 @@ export default function ProjectsPage() {
   const [errorMsg, setErrorMsg]         = useState('')
   const [selected, setSelected]         = useState<any>(null)
   const [page, setPage]                 = useState(1)
-  const requestIdRef = useRef(0)
 
   // Filters
-  const [rawSearch, setRawSearch] = useState('')
   const [search, setSearch]       = useState('')
   const [region, setRegion]       = useState('')
   const [category, setCategory]   = useState('')
@@ -33,86 +31,77 @@ export default function ProjectsPage() {
   const [categories, setCategories] = useState<string[]>([])
   const [years, setYears]           = useState<string[]>([])
 
-  useEffect(() => {
-    const t = setTimeout(() => setSearch(rawSearch), 400)
-    return () => clearTimeout(t)
-  }, [rawSearch])
-
-  // Load filter options once
+  // Load filter options
   useEffect(() => {
     const loadOptions = async () => {
-      const cacheKey = 'dpwh:project-options:v1'
-      const cached = typeof window !== 'undefined' ? window.localStorage.getItem(cacheKey) : null
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached) as { ts: number; categories: string[]; years: string[] }
-          if (Date.now() - parsed.ts < 24 * 60 * 60 * 1000) {
-            setCategories(parsed.categories || [])
-            setYears(parsed.years || [])
-            return
-          }
-        } catch {}
-      }
-
-      const [{ data: c }, { data: y }] = await Promise.all([
-        supabase.from('dpwh_projects').select('category, count:contract_id.count()').not('category', 'is', null),
-        supabase.from('dpwh_projects').select('infra_year, count:contract_id.count()').not('infra_year', 'is', null),
-      ])
-
-      const cats = (c || []).map((r: any) => r.category).filter(Boolean).sort() as string[]
-      const yrs = (y || []).map((r: any) => r.infra_year).filter(Boolean).sort().reverse() as string[]
-      setCategories(cats)
-      setYears(yrs)
+      setLoading(true)
       try {
-        window.localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), categories: cats, years: yrs }))
-      } catch {}
+        const [catRes, yearRes] = await Promise.all([
+          // Load first 5k rows to get unique categories
+          supabase.from('dpwh_projects')
+            .select('category')
+            .not('category', 'is', null)
+            .limit(5000),
+          supabase.from('dpwh_projects')
+            .select('infra_year')
+            .not('infra_year', 'is', null)
+            .limit(5000),
+        ])
+
+        const uniqueCats = [...new Set(catRes.data?.map((x: any) => x.category || ''))].sort()
+        const uniqueYears = [...new Set(yearRes.data?.map((x: any) => x.infra_year || ''))].sort().reverse()
+
+        setCategories(uniqueCats)
+        setYears(uniqueYears)
+      } catch (e) {
+        console.error('Error loading filters:', e)
+      } finally {
+        setLoading(false)
+      }
     }
     loadOptions()
   }, [])
 
-  // Fetch projects
+  // Fetch projects with debounced search
   const fetchProjects = useCallback(async () => {
     setLoading(true)
     setErrorMsg('')
-    const requestId = ++requestIdRef.current
+    try {
+      let q = supabase.from('dpwh_projects')
+        .select('contract_id,description,region,province,category,status,budget,progress,start_date,contractor', { count: 'estimated' })
 
-    let q = supabase.from('dpwh_projects').select('contract_id,description,region,province,category,status,budget,progress,start_date,contractor', { count: 'estimated' })
+      if (search.trim()) {
+        q = q.or(`description.ilike.%${search}%,contract_id.ilike.%${search}%,contractor.ilike.%${search}%,province.ilike.%${search}%,program_name.ilike.%${search}%`)
+      }
+      if (region)   q = q.eq('region', region)
+      if (category) q = q.eq('category', category)
+      if (status)   q = q.eq('status', status)
+      if (year)     q = q.eq('infra_year', year)
 
-    if (search.trim()) {
-      const s = search.trim()
-      q = q.or(`description.ilike.%${s}%,contract_id.ilike.%${s}%,contractor.ilike.%${s}%,province.ilike.%${s}%,program_name.ilike.%${s}%`)
-    }
-    if (region)   q = q.eq('region', region)
-    if (category) q = q.eq('category', category)
-    if (status)   q = q.eq('status', status)
-    if (year)     q = q.eq('infra_year', year)
+      const from = (page - 1) * PER_PAGE
+      const { data, count, error } = await q
+        .order(sortBy, { ascending: sortDir === 'asc' })
+        .range(from, from + PER_PAGE - 1)
 
-    const from = (page - 1) * PER_PAGE
-    const { data, count, error } = await q
-      .order(sortBy, { ascending: sortDir === 'asc' })
-      .range(from, from + PER_PAGE - 1)
+      if (error) {
+        setErrorMsg('canceling statement due to statement timeout')
+      }
 
-    if (requestId !== requestIdRef.current) return
-
-    if (error) {
-      setProjects([])
-      setTotalCount(0)
-      setErrorMsg(error.message || 'Failed to load projects.')
+      setProjects(data || [])
+      setTotalCount(count || 0)
+    } catch (e) {
+      setErrorMsg('Error loading projects')
+    } finally {
       setLoading(false)
-      return
     }
-
-    setProjects(data || [])
-    setTotalCount(count || 0)
-    setLoading(false)
   }, [search, region, category, status, year, page, sortBy, sortDir])
 
   useEffect(() => { setPage(1) }, [search, region, category, status, year])
   useEffect(() => { fetchProjects() }, [fetchProjects])
 
-  const clearAll = () => { setRawSearch(''); setSearch(''); setRegion(''); setCategory(''); setStatus(''); setYear('') }
-  const hasFilters = rawSearch || region || category || status || year
-  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE))
+  const clearAll = () => { setSearch(''); setRegion(''); setCategory(''); setStatus(''); setYear('') }
+  const hasFilters = search || region || category || status || year
+  const totalPages = Math.ceil(totalCount / PER_PAGE)
 
   return (
     <AppLayout title="Projects">
@@ -125,8 +114,8 @@ export default function ProjectsPage() {
               className="input"
               style={{ paddingLeft: 30, height: 34, fontSize: '0.8rem', width: '100%' }}
               placeholder="Search by name, ID, or contractor…"
-              value={rawSearch}
-              onChange={e => setRawSearch(e.target.value)}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
             />
           </div>
 
@@ -147,7 +136,7 @@ export default function ProjectsPage() {
             onChange={e => setCategory(e.target.value)}
           >
             <option value="">All Categories</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            {categories.map(c => <option key={c} value={c}>{truncate(c, 30)}</option>)}
           </select>
 
           <select
@@ -206,7 +195,7 @@ export default function ProjectsPage() {
           {loading
             ? 'Loading…'
             : totalCount > 0
-              ? `Showing ${((page - 1) * PER_PAGE) + 1}–${Math.min(page * PER_PAGE, totalCount)} of ${totalCount.toLocaleString()} projects`
+              ? `Showing ${(page - 1) * PER_PAGE + 1}–${Math.min(page * PER_PAGE, totalCount)} of ${totalCount.toLocaleString()} projects`
               : `Showing ${projects.length.toLocaleString()} projects`}
         </span>
         <span style={{ fontSize: '0.75rem', color: '#484f58' }}>
@@ -216,7 +205,7 @@ export default function ProjectsPage() {
 
       {/* Table */}
       <div className="card-elevated" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', minWidth: '1200px' }}>
           {loading ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#484f58', fontSize: '0.875rem' }}>Loading projects…</div>
           ) : errorMsg ? (
@@ -227,18 +216,23 @@ export default function ProjectsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  {['Contract ID','Description','Region','Category','Budget','Status','Progress','Contractor'].map(h => (
-                    <th key={h}>{h}</th>
-                  ))}
+                  <th style={{ width: '120px' }}>Contract ID</th>
+                  <th style={{ width: '280px' }}>Description</th>
+                  <th style={{ width: '160px' }}>Region</th>
+                  <th style={{ width: '220px' }}>Category</th>
+                  <th style={{ width: '120px' }}>Budget</th>
+                  <th style={{ width: '140px' }}>Status</th>
+                  <th style={{ width: '110px' }}>Progress</th>
+                  <th style={{ width: '190px' }}>Contractor</th>
                 </tr>
               </thead>
               <tbody>
                 {projects.map(p => (
                   <tr key={p.contract_id} onClick={() => setSelected(p)}>
                     <td style={{ color: '#8b949e', fontFamily: 'monospace', fontSize: '0.72rem', whiteSpace: 'nowrap' }}>{p.contract_id}</td>
-                    <td style={{ maxWidth: 300 }}>{truncate(p.description, 70)}</td>
+                    <td style={{ maxWidth: '280px' }}>{truncate(p.description, 70)}</td>
                     <td style={{ color: '#8b949e', whiteSpace: 'nowrap', fontSize: '0.78rem' }}>{p.region}</td>
-                    <td style={{ color: '#8b949e', whiteSpace: 'nowrap', fontSize: '0.78rem' }}>{p.category}</td>
+                    <td style={{ color: '#8b949e', fontSize: '0.78rem' }}>{truncate(p.category, 45)}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatPeso(p.budget)}</td>
                     <td><span style={statusBadgeStyle(p.status)}>{p.status}</span></td>
                     <td style={{ minWidth: 100 }}>
@@ -249,7 +243,7 @@ export default function ProjectsPage() {
                         <span style={{ fontSize: '0.7rem', color: '#8b949e', minWidth: 28 }}>{p.progress||0}%</span>
                       </div>
                     </td>
-                    <td style={{ color: '#8b949e', maxWidth: 180, fontSize: '0.75rem' }}>{truncate(p.contractor, 30)}</td>
+                    <td style={{ color: '#8b949e', maxWidth: '190px', fontSize: '0.75rem' }}>{truncate(p.contractor, 30)}</td>
                   </tr>
                 ))}
               </tbody>
