@@ -137,7 +137,7 @@ export default async function DashboardPage() {
           </div>
         </div>
         <div className="card-elevated" style={{ height: 450, display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>Projects by Category</h3>
+          <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#c8dbebff', marginBottom: '1rem' }}>Projects by Category</h3>
           <div style={{ flex: 1, minHeight: 0 }}>
             <AnalyticsCategoryChart data={categoryData} />
           </div>

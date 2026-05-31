@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
-export default function ProjectsByYearChart({ data }: { data: { year: string; count: number; budget: number }[] }) {
+export default function ProjectsByYearChart({ data }: { data: { year: string; count: number; budget?: number }[] }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
 
