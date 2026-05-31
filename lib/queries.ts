@@ -38,43 +38,8 @@ export async function fetchAllRows(selectQuery: any, maxRows: number = 10000) {
 }
 
 export async function getTotalBudget() {
-  // Use a simpler approach to get total budget if possible, 
-  // but since we need the sum and Supabase doesn't have SUM() in REST API without RPC:
-  const { count, error: countError } = await supabase
-    .from('dpwh_projects')
-    .select('*', { count: 'exact', head: true });
-
-  if (countError || !count) return 0;
-
-  const pageSize = 2000;
-  const numPages = Math.ceil(count / pageSize);
-  const pages = Array.from({ length: numPages }, (_, i) => i);
-  
-  let total = 0;
-  const concurrencyLimit = 5; // Lower concurrency for more reliability
-  
-  for (let i = 0; i < pages.length; i += concurrencyLimit) {
-    const chunk = pages.slice(i, i + concurrencyLimit);
-    const results = await Promise.all(
-      chunk.map(page => 
-        supabase
-          .from('dpwh_projects')
-          .select('budget')
-          .order('contract_id', { ascending: true }) 
-          .range(page * pageSize, (page + 1) * pageSize - 1)
-          .then(res => {
-            if (res.error) {
-              console.error(`Error fetching page ${page}:`, res.error);
-              return [];
-            }
-            return res.data || [];
-          })
-      )
-    );
-    results.flat().forEach(p => total += (p.budget || 0));
-  }
-  
-  return total;
+  const regions = await getBudgetByRegion();
+  return regions.reduce((sum, r) => sum + r.totalBudget, 0);
 }
 
 export async function getYearStats() {
@@ -82,17 +47,16 @@ export async function getYearStats() {
   
   const results = await Promise.all(
     years.map(async (year) => {
-      let count = 0;
-      let start = 0;
-      const pageSize = 5000;
-      
-      // Use simple count with eq filter for accuracy
-      const { count: yearCount, error } = await supabase
+      const { count, error } = await supabase
         .from('dpwh_projects')
         .select('*', { count: 'exact', head: true })
         .eq('infra_year', year);
         
-      return { year, count: yearCount || 0 };
+      if (error) {
+        console.error(`Error counting year ${year}:`, error);
+        return { year, count: 0 };
+      }
+      return { year, count: count || 0 };
     })
   );
 
@@ -209,18 +173,17 @@ export async function getProjectById(contractId: string) {
 
 export async function getBudgetByRegion() {
   const regions = [
-    'Region I', 'Region II', 'Region III', 'Region IV-A', 'Region IV-B', 
+    'NCR', 'Region I', 'Region II', 'Region III', 'Region IV-A', 'Region IV-B', 
     'Region V', 'Region VI', 'Region VII', 'Region VIII', 'Region IX', 
-    'Region X', 'Region XI', 'Region XII', 'Region XIII', 'NCR', 'CAR', 'BARMM'
+    'Region X', 'Region XI', 'Region XII', 'Region XIII', 'CAR', 'BARMM'
   ];
   
   const results = await Promise.all(
     regions.map(async (region) => {
       let total = 0;
       let start = 0;
-      const pageSize = 1000;
+      const pageSize = 5000;
       
-      // We only fetch the budget column to save bandwidth
       while (true) {
         const { data, error } = await supabase
           .from('dpwh_projects')
@@ -240,8 +203,7 @@ export async function getBudgetByRegion() {
 
   return results
     .filter(r => r.totalBudget > 0)
-    .sort((a, b) => b.totalBudget - a.totalBudget)
-    .slice(0, 10);
+    .sort((a, b) => b.totalBudget - a.totalBudget);
 }
 
 export async function getProjectsByStatus() {

@@ -17,7 +17,6 @@ export default async function DashboardPage() {
     { count: totalCount },
     statsData,
     { data: recentData },
-    fullBudget,
     globalStatuses,
     globalYearStats,
     globalBudgetByRegion,
@@ -28,7 +27,6 @@ export default async function DashboardPage() {
       .select('contract_id, description, region, category, budget, status, progress')
       .order('infra_year', { ascending: false })
       .limit(10),
-    getTotalBudget(),
     getStatusCounts(),
     getYearStats(),
     getBudgetByRegion(),
@@ -40,9 +38,6 @@ export default async function DashboardPage() {
   const progressBuckets = [0,0,0,0,0,0,0,0,0,0]
   const contractorMap: Record<string, { count: number, totalBudget: number, totalProgress: number, progressCount: number }> = {}
   
-  // Use the reliable fullBudget for the KPI
-  let totalBudget = fullBudget || 0
-
   for (const p of statsData || []) {
     const b = p.budget || 0
 
@@ -73,7 +68,16 @@ export default async function DashboardPage() {
   }
 
   // Format data for all charts
-  const budgetByRegionList = globalBudgetByRegion.map(r => ({ region: r.region, total: r.totalBudget }))
+  const budgetByRegionList = globalBudgetByRegion
+    .map(r => ({ region: r.region, total: r.totalBudget }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10)
+
+  // Calculate total budget from all regions for 100% accuracy
+  const totalBudgetFromRegions = globalBudgetByRegion.reduce((sum, r) => sum + r.totalBudget, 0)
+  
+  // Use the reliable sum from regions for the KPI
+  let totalBudget = totalBudgetFromRegions || 0
 
   // Use global statuses for the donut chart
   const byStatus = globalStatuses
