@@ -3,13 +3,13 @@
 // to get exact strings, then update this list.
 
 export const STATUSES: { label: string; value: string; color: string; bg: string; border: string }[] = [
-  { label: 'Completed',       value: 'Completed',       color: '#3fb950', bg: 'rgba(63,185,80,0.15)',   border: 'rgba(63,185,80,0.35)'   },
-  { label: 'On-Going',        value: 'On-Going',        color: '#58a6ff', bg: 'rgba(88,166,255,0.15)',  border: 'rgba(88,166,255,0.35)'  },
-  { label: 'For Procurement', value: 'For Procurement', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.35)'  },
-  { label: 'Not Yet Started', value: 'Not Yet Started', color: '#e3b341', bg: 'rgba(227,179,65,0.15)',  border: 'rgba(227,179,65,0.35)'  },
-  { label: 'Suspended',       value: 'Suspended',       color: '#d29922', bg: 'rgba(210,153,34,0.15)',  border: 'rgba(210,153,34,0.35)'  },
-  { label: 'Terminated',      value: 'Terminated',      color: '#f85149', bg: 'rgba(248,81,73,0.15)',   border: 'rgba(248,81,73,0.35)'   },
-  { label: 'Under Warranty',  value: 'Under Warranty',  color: '#79c0ff', bg: 'rgba(121,192,255,0.15)', border: 'rgba(121,192,255,0.35)' },
+  { label: 'Completed',       value: 'Completed',       color: '#30d158', bg: 'rgba(48,209,88,0.15)',   border: 'rgba(48,209,88,0.25)'   },
+  { label: 'On-Going',        value: 'On-Going',        color: '#0a84ff', bg: 'rgba(10,132,255,0.15)',  border: 'rgba(10,132,255,0.25)'  },
+  { label: 'For Procurement', value: 'For Procurement', color: '#ffd60a', bg: 'rgba(255,214,10,0.15)',  border: 'rgba(255,214,10,0.25)'  },
+  { label: 'Not Yet Started', value: 'Not Yet Started', color: '#ffd60a', bg: 'rgba(255,214,10,0.15)',  border: 'rgba(255,214,10,0.25)'  },
+  { label: 'Suspended',       value: 'Suspended',       color: '#ffd60a', bg: 'rgba(255,214,10,0.15)',  border: 'rgba(255,214,10,0.25)'  },
+  { label: 'Terminated',      value: 'Terminated',      color: '#ff453a', bg: 'rgba(255,69,58,0.15)',   border: 'rgba(255,69,58,0.25)'   },
+  { label: 'Under Warranty',  value: 'Under Warranty',  color: '#64d2ff', bg: 'rgba(100,210,255,0.15)', border: 'rgba(100,210,255,0.25)' },
 ]
 
 // Add or remove entries based on what the SQL audit returns.
@@ -17,15 +17,15 @@ export const STATUSES: { label: string; value: string; color: string; bg: string
 
 export function getStatusStyle(status: string) {
   const s = STATUSES.find(x => x.value === status)
-  return s || { color: '#8b949e', bg: 'rgba(139,148,158,0.15)', border: 'rgba(139,148,158,0.35)' }
+  return s || { color: '#86868b', bg: 'rgba(134,134,139,0.15)', border: 'rgba(134,134,139,0.25)' }
 }
 
 export function statusBadgeStyle(status: string): React.CSSProperties {
   const s = getStatusStyle(status)
   return {
     display: 'inline-flex', alignItems: 'center',
-    padding: '2px 10px', borderRadius: 999,
-    fontSize: '0.7rem', fontWeight: 600,
+    padding: '4px 12px', borderRadius: 100,
+    fontSize: '0.75rem', fontWeight: 600,
     background: s.bg, border: `1px solid ${s.border}`, color: s.color,
   }
 }

@@ -1,7 +1,7 @@
-import { supabase } from './supabase';
-import type { Project } from '@/types';
+import { supabase } from './supabase'
+import type { Project } from '@/types'
 
-async function fetchAllRows(selectQuery: any) {
+export async function fetchAllRows(selectQuery: any) {
   const allData: any[] = [];
   let page = 0;
   const pageSize = 1000;

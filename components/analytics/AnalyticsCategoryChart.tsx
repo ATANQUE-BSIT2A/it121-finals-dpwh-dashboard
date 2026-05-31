@@ -3,13 +3,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export default function AnalyticsCategoryChart({ data }: { data: any[] }) {
   return (
-    <div style={{ width: '100%', height: 300 }}>
+    <div style={{ width: '100%', height: 320 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 0, right: 16, bottom: 60, left: 8 }}>
-          <CartesianGrid vertical={false} stroke="#21262d" />
+        <BarChart data={data} margin={{ top: 0, right: 24, bottom: 72, left: 12 }}>
+          <CartesianGrid vertical={false} stroke="#2c2c2e" />
           <XAxis
             dataKey="category"
-            tick={{ fill: '#8b949e', fontSize: 10 }}
+            tick={{ fill: '#86868b', fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             angle={-35}
@@ -17,16 +17,16 @@ export default function AnalyticsCategoryChart({ data }: { data: any[] }) {
             interval={0}
           />
           <YAxis
-            tick={{ fill: '#8b949e', fontSize: 10 }}
+            tick={{ fill: '#86868b', fontSize: 13 }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}
           />
           <Tooltip
-            contentStyle={{ background: '#1c2128', border: '1px solid #30363d', borderRadius: 8, color: '#e6edf3', fontSize: 12 }}
+            contentStyle={{ background: '#1c1c1e', border: '1px solid #38383a', borderRadius: 12, color: '#f5f5f7', fontSize: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
             formatter={(v: any, name: any) => [Number(v).toLocaleString(), name === 'count' ? 'Projects' : 'Budget']}
           />
-          <Bar dataKey="count" fill="#1f6feb" radius={[4, 4, 0, 0]} maxBarSize={40} name="count" />
+          <Bar dataKey="count" fill="#0a84ff" radius={[8, 8, 0, 0]} maxBarSize={44} name="count" />
         </BarChart>
       </ResponsiveContainer>
     </div>

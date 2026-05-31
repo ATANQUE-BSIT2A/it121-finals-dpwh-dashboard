@@ -11,13 +11,8 @@ function toLabel(dbValue: string): string {
     // Return just the short part before " — "
     return match.label.split(' — ')[0]
   }
-  // Fallback: shorten manually
+  // Return as-is without shortening
   return dbValue
-    .replace('National Capital Region', 'NCR')
-    .replace('Cordillera Administrative Region', 'CAR')
-    .replace('Bangsamoro Autonomous Region in Muslim Mindanao', 'BARMM')
-    .replace('Negros Island Region', 'NIR')
-    .replace('Region ', 'R')
 }
 
 const formatBudget = (v: number) =>
@@ -29,32 +24,32 @@ export default function BudgetByRegionChart({ data }: Props) {
   const labeled = data.map(d => ({ ...d, label: toLabel(d.region) }))
 
   return (
-    <div style={{ width: '100%', height: 280 }}>
+    <div style={{ width: '100%', height: 320 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={labeled} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 8 }}>
-          <CartesianGrid horizontal={false} stroke="#21262d" />
+        <BarChart data={labeled} layout="vertical" margin={{ top: 0, right: 24, bottom: 0, left: 12 }}>
+          <CartesianGrid horizontal={false} stroke="#2c2c2e" />
           <XAxis
             type="number"
-            tick={{ fill: '#8b949e', fontSize: 10 }}
+            tick={{ fill: '#86868b', fontSize: 12 }}
             tickLine={false} axisLine={false}
             tickFormatter={formatBudget}
           />
           <YAxis
             type="category"
             dataKey="label"
-            tick={{ fill: '#8b949e', fontSize: 10 }}
+            tick={{ fill: '#86868b', fontSize: 13, whiteSpace: 'nowrap' }}
             tickLine={false} axisLine={false}
-            width={64}
+            width={110}
           />
           <Tooltip
-            contentStyle={{ background: '#1c2128', border: '1px solid #30363d', borderRadius: 8, color: '#e6edf3', fontSize: 12 }}
+            contentStyle={{ background: '#1c1c1e', border: '1px solid #38383a', borderRadius: 12, color: '#f5f5f7', fontSize: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
             formatter={(v: any) => [formatBudget(Number(v)), 'Budget']}
             labelFormatter={(label) => {
               const match = labeled.find(d => d.label === label)
               return match?.region || label
             }}
           />
-          <Bar dataKey="total" fill="#1f6feb" radius={[0, 4, 4, 0]} maxBarSize={18} />
+          <Bar dataKey="total" fill="#0a84ff" radius={[0, 8, 8, 0]} maxBarSize={22} />
         </BarChart>
       </ResponsiveContainer>
     </div>

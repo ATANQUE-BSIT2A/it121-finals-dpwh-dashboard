@@ -15,7 +15,7 @@ export default function StatusDonutChart({ data }: Props) {
   // Map each status to its unique color
   const getColor = (name: string) => {
     const s = STATUSES.find(x => x.value === name || x.label === name)
-    return s?.color || '#8b949e'
+    return s?.color || '#86868b'
   }
 
   // Custom label: only show % for slices > 5%
@@ -27,7 +27,7 @@ export default function StatusDonutChart({ data }: Props) {
     const y = cy + radius * Math.sin(-midAngle * RADIAN)
     return (
       <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central"
-        style={{ fontSize: 11, fontWeight: 600, pointerEvents: 'none' }}>
+        style={{ fontSize: 12, fontWeight: 700, pointerEvents: 'none' }}>
         {`${(percent * 100).toFixed(1)}%`}
       </text>
     )
@@ -35,14 +35,14 @@ export default function StatusDonutChart({ data }: Props) {
 
   // Custom legend shows ALL statuses with their count
   const renderLegend = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, paddingLeft: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 16 }}>
       {sorted.map(entry => (
-        <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: getColor(entry.name), flexShrink: 0 }} />
-          <span style={{ fontSize: 11, color: '#8b949e', whiteSpace: 'nowrap' }}>
+        <div key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 12, height: 12, borderRadius: '50%', background: getColor(entry.name), flexShrink: 0 }} />
+          <span style={{ fontSize: 13, color: '#86868b', whiteSpace: 'nowrap' }}>
             {entry.name}
           </span>
-          <span style={{ fontSize: 11, color: '#e6edf3', fontWeight: 600, marginLeft: 'auto', paddingLeft: 8 }}>
+          <span style={{ fontSize: 13, color: '#f5f5f7', fontWeight: 700, marginLeft: 'auto', paddingLeft: 12 }}>
             {entry.value.toLocaleString()}
           </span>
         </div>
@@ -51,9 +51,9 @@ export default function StatusDonutChart({ data }: Props) {
   )
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 280 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 16, height: 320 }}>
       {/* Donut */}
-      <div style={{ flex: '0 0 200px', height: '100%' }}>
+      <div style={{ flex: '0 0 220px', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -61,8 +61,8 @@ export default function StatusDonutChart({ data }: Props) {
               dataKey="value"
               nameKey="name"
               cx="50%" cy="50%"
-              innerRadius={60}
-              outerRadius={90}
+              innerRadius={65}
+              outerRadius={95}
               paddingAngle={2}
               minAngle={4}
               labelLine={false}
@@ -73,7 +73,7 @@ export default function StatusDonutChart({ data }: Props) {
               ))}
             </Pie>
             <Tooltip
-              contentStyle={{ background: '#1c2128', border: '1px solid #30363d', borderRadius: 8, color: '#e6edf3', fontSize: 12 }}
+              contentStyle={{ background: '#1c1c1e', border: '1px solid #38383a', borderRadius: 12, color: '#f5f5f7', fontSize: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
               formatter={(v: any, name: any) => [Number(v).toLocaleString(), String(name)]}
             />
           </PieChart>
