@@ -6,10 +6,10 @@ export default function AnalyticsCategoryChart({ data }: { data: any[] }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
 
-  if (!mounted) return <div style={{ width: '100%', height: 320, background: 'transparent' }} />
+  if (!mounted) return <div style={{ width: '100%', height: '100%', background: 'transparent' }} />
 
   return (
-    <div style={{ width: '100%', height: 400 }}>
+    <div style={{ width: '100%', height: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}

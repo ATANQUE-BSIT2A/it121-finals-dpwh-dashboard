@@ -146,25 +146,33 @@ export default async function DashboardPage() {
 
       {/* Second Row: Projects by Year & Category */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-        <div className="card-elevated">
+        <div className="card-elevated" style={{ height: 450, display: 'flex', flexDirection: 'column' }}>
           <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>Projects by Year</h3>
-          <ProjectsByYearChart data={byYear} />
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ProjectsByYearChart data={byYear} />
+          </div>
         </div>
-        <div className="card-elevated">
+        <div className="card-elevated" style={{ height: 450, display: 'flex', flexDirection: 'column' }}>
           <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>Projects by Category</h3>
-          <AnalyticsCategoryChart data={categoryData} />
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <AnalyticsCategoryChart data={categoryData} />
+          </div>
         </div>
       </div>
 
       {/* Third Row: Progress & Contractors */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-        <div className="card-elevated">
+        <div className="card-elevated" style={{ height: 450, display: 'flex', flexDirection: 'column' }}>
           <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>Progress Distribution</h3>
-          <AnalyticsProgressChart data={progressData} />
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <AnalyticsProgressChart data={progressData} />
+          </div>
         </div>
-        <div className="card-elevated">
+        <div className="card-elevated" style={{ height: 450, display: 'flex', flexDirection: 'column' }}>
           <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', marginBottom: '1rem' }}>Top 20 Contractors</h3>
-          <AnalyticsContractorsTable data={contractorData} />
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            <AnalyticsContractorsTable data={contractorData} />
+          </div>
         </div>
       </div>
 

@@ -13,14 +13,20 @@ export default function AnalyticsProgressChart({ data }: { data: any[] }) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
 
-  if (!mounted) return <div style={{ width: '100%', height: 220, background: 'transparent' }} />
+  if (!mounted) return <div style={{ width: '100%', height: '100%', background: 'transparent' }} />
 
   return (
-    <div style={{ width: '100%', height: 220 }}>
+    <div style={{ width: '100%', height: '100%' }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 10, right: 12, bottom: 10, left: 8 }}>
+        <BarChart data={data} margin={{ top: 10, right: 12, bottom: 20, left: 8 }}>
           <CartesianGrid vertical={false} stroke="#2c2c2e" />
-          <XAxis dataKey="range" tick={{ fill: '#e6edf3', fontSize: 13 }} tickLine={false} axisLine={false} />
+          <XAxis 
+            dataKey="range" 
+            tick={{ fill: '#e6edf3', fontSize: 13 }} 
+            tickLine={false} 
+            axisLine={false}
+            dy={10}
+          />
           <YAxis
             tick={{ fill: '#e6edf3', fontSize: 13 }}
             tickLine={false}

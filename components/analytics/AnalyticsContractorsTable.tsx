@@ -1,12 +1,9 @@
-export default function AnalyticsContractorsTable({ data }: { data: any[] }) {
-  const formatPeso = (v: number) => {
-    if (v === undefined || v === null) return '₱0'
-    return v >= 1e9 ? `₱${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `₱${(v / 1e6).toFixed(2)}M` : `₱${v.toLocaleString()}`
-  }
+import { formatPeso } from '@/lib/utils'
 
+export default function AnalyticsContractorsTable({ data }: { data: any[] }) {
   return (
-    <div style={{ overflowX: 'auto' }}>
-      <table className="data-table">
+    <div style={{ height: '100%' }}>
+      <table className="data-table" style={{ fontSize: '0.8rem' }}>
         <thead>
           <tr>
             <th>#</th>
@@ -23,7 +20,7 @@ export default function AnalyticsContractorsTable({ data }: { data: any[] }) {
               <td style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.contractor}</td>
               <td style={{ textAlign: 'right', color: '#58a6ff', fontWeight: 600 }}>{(row.count || 0).toLocaleString()}</td>
               <td style={{ textAlign: 'right', color: '#3fb950', fontWeight: 600 }}>{formatPeso(row.budget)}</td>
-              <td style={{ textAlign: 'right', color: '#e6edf3' }}>{(row.avgProgress || 0).toFixed(1)}%</td>
+              <td style={{ textAlign: 'right', color: '#e6edf3', paddingTop: 2 }}>{(row.avgProgress || 0).toFixed(1)}%</td>
             </tr>
           ))}
         </tbody>

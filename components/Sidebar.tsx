@@ -7,7 +7,6 @@ import { LayoutDashboard, FolderOpen, BarChart2, Map, Info } from 'lucide-react'
 const links = [
   { href: '/dashboard', label: 'Dashboard',  icon: LayoutDashboard },
   { href: '/projects',  label: 'Projects',   icon: FolderOpen },
-  { href: '/analytics', label: 'Analytics',  icon: BarChart2 },
   { href: '/map',       label: 'Map View',   icon: Map },
   { href: '/about',     label: 'About',      icon: Info },
 ]
@@ -42,13 +41,13 @@ export default function Sidebar() {
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '0.55rem 0.75rem', borderRadius: 8, marginBottom: 2,
                 background: active ? 'rgba(56,139,253,0.15)' : 'transparent',
-                color: active ? '#58a6ff' : '#8b949e',
-                fontSize: '0.875rem', fontWeight: active ? 600 : 400,
+                color: active ? '#58a6ff' : '#e6edf3',
+                fontSize: '0.875rem', fontWeight: 700,
                 transition: 'all 0.15s', cursor: 'pointer',
                 border: active ? '1px solid rgba(56,139,253,0.2)' : '1px solid transparent',
               }}
-              onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = '#21262d'; (e.currentTarget as HTMLElement).style.color = '#e6edf3' }}}
-              onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#8b949e' }}}
+              onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = '#21262d' }}}
+              onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent' }}}
               >
                 <Icon size={16} />
                 <span>{label}</span>
