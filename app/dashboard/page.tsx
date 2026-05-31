@@ -8,7 +8,7 @@ import AnalyticsCategoryChart from '@/components/analytics/AnalyticsCategoryChar
 import AnalyticsProgressChart from '@/components/analytics/AnalyticsProgressChart'
 import AnalyticsContractorsTable from '@/components/analytics/AnalyticsContractorsTable'
 import { supabase } from '@/lib/supabase'
-import { fetchAllRows, getTotalBudget, getStatusCounts, getYearStats } from '@/lib/queries'
+import { fetchAllRows, getTotalBudget, getStatusCounts, getYearStats, getBudgetByRegion } from '@/lib/queries'
 
 export const revalidate = 300
 
@@ -20,6 +20,7 @@ export default async function DashboardPage() {
     fullBudget,
     globalStatuses,
     globalYearStats,
+    globalBudgetByRegion,
   ] = await Promise.all([
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
     fetchAllRows(supabase.from('dpwh_projects').select('region, status, budget, infra_year, category, progress, contractor').order('infra_year', { ascending: false }).order('contract_id', { ascending: true }), 10000),
@@ -30,11 +31,11 @@ export default async function DashboardPage() {
     getTotalBudget(),
     getStatusCounts(),
     getYearStats(),
+    getBudgetByRegion(),
   ])
 
   // Calculate stats from sample
   const budgetByRegion: Record<string, number> = {}
-  const statusCountsFromSample: Record<string, number> = {}
   const categoryMap: Record<string, { count: number, budget: number }> = {}
   const progressBuckets = [0,0,0,0,0,0,0,0,0,0]
   const contractorMap: Record<string, { count: number, totalBudget: number, totalProgress: number, progressCount: number }> = {}
@@ -44,10 +45,6 @@ export default async function DashboardPage() {
 
   for (const p of statsData || []) {
     const b = p.budget || 0
-    // Budget by Region
-    if (p.region) {
-      budgetByRegion[p.region] = (budgetByRegion[p.region] || 0) + b
-    }
 
     // Category Stats
     if (p.category) {
@@ -76,10 +73,7 @@ export default async function DashboardPage() {
   }
 
   // Format data for all charts
-  const budgetByRegionList = Object.entries(budgetByRegion)
-    .map(([region, total]) => ({ region, total }))
-    .sort((a, b) => b.total - a.total)
-    .slice(0, 10)
+  const budgetByRegionList = globalBudgetByRegion.map(r => ({ region: r.region, total: r.totalBudget }))
 
   // Use global statuses for the donut chart
   const byStatus = globalStatuses
