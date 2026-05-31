@@ -1,11 +1,17 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { STATUSES } from '@/lib/statuses'
 
 export default function AnalyticsYearChart({ data }: { data: any[] }) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
   const allStatuses = STATUSES.map(s => s.value).filter(s =>
     data.some(d => d[s] !== undefined)
   )
+
+  if (!mounted) return <div style={{ width: '100%', height: 300, background: 'transparent' }} />
 
   return (
     <div style={{ width: '100%', height: 300 }}>

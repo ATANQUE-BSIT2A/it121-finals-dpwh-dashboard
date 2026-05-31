@@ -112,7 +112,7 @@ export default function ProjectsPage() {
             <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#484f58', pointerEvents: 'none' }} />
             <input
               className="input"
-              style={{ paddingLeft: 30, height: 34, fontSize: '0.8rem', width: '100%' }}
+              style={{ paddingLeft: 30, height: 34, lineHeight: '34px', fontSize: '0.8rem', width: '100%' }}
               placeholder="Search by name, ID, or contractor…"
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -121,7 +121,7 @@ export default function ProjectsPage() {
 
           <select
             className="input"
-            style={{ width: 180, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
+            style={{ width: 190, flexShrink: 0, height: 34, lineHeight: '34px', fontSize: '0.8rem' }}
             value={region}
             onChange={e => setRegion(e.target.value)}
           >
@@ -131,7 +131,7 @@ export default function ProjectsPage() {
 
           <select
             className="input"
-            style={{ width: 170, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
+            style={{ width: 180, flexShrink: 0, height: 34, lineHeight: '34px', fontSize: '0.8rem' }}
             value={category}
             onChange={e => setCategory(e.target.value)}
           >
@@ -141,7 +141,7 @@ export default function ProjectsPage() {
 
           <select
             className="input"
-            style={{ width: 160, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
+            style={{ width: 170, flexShrink: 0, height: 34, lineHeight: '34px', fontSize: '0.8rem' }}
             value={status}
             onChange={e => setStatus(e.target.value)}
           >
@@ -151,7 +151,7 @@ export default function ProjectsPage() {
 
           <select
             className="input"
-            style={{ width: 110, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
+            style={{ width: 130, flexShrink: 0, height: 34, lineHeight: '34px', fontSize: '0.8rem' }}
             value={year}
             onChange={e => setYear(e.target.value)}
           >
@@ -161,7 +161,7 @@ export default function ProjectsPage() {
 
           <select
             className="input"
-            style={{ width: 150, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
+            style={{ width: 160, flexShrink: 0, height: 34, lineHeight: '34px', fontSize: '0.8rem' }}
             value={`${sortBy}:${sortDir}`}
             onChange={e => {
               const [s, d] = e.target.value.split(':')

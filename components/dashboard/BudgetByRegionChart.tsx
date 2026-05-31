@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { REGIONS } from '@/lib/regions'
 
@@ -21,7 +22,12 @@ const formatBudget = (v: number) =>
               `₱${(v/1e6).toFixed(0)}M`
 
 export default function BudgetByRegionChart({ data }: Props) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
   const labeled = data.map(d => ({ ...d, label: toLabel(d.region) }))
+
+  if (!mounted) return <div style={{ width: '100%', height: 320, background: 'transparent' }} />
 
   return (
     <div style={{ width: '100%', height: 320 }}>

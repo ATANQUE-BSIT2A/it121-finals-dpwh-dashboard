@@ -67,11 +67,13 @@ body {
   background: #1c1c1e;
   border: 1px solid #38383a;
   border-radius: 12px;
-  padding: 0.75rem 1rem;
+  padding: 0 1rem;
+  height: 44px;
   color: #f5f5f7;
-  font-size: 1rem;
+  font-size: 0.9375rem;
   outline: none;
   transition: all 0.2s ease;
+  line-height: 44px;
 }
 .input:focus { border-color: #0a84ff; box-shadow: 0 0 0 4px rgba(10,132,255,0.15); }
 .input::placeholder { color: #48484a; }
@@ -85,6 +87,16 @@ select.input {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2386868b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  line-height: normal; /* Fix for vertical alignment in select */
+}
+select.input option {
+  background: #1c1c1e;
+  color: #f5f5f7;
+  padding: 8px;
 }
 
 /* ── Button ── */

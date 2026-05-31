@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { STATUSES } from '@/lib/statuses'
 
@@ -7,7 +8,12 @@ interface Props { data: { name: string; value: number }[] }
 const LABEL_THRESHOLD = 3  // degrees — slices smaller than this show in legend only
 
 export default function StatusDonutChart({ data }: Props) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
   const total = data.reduce((s, d) => s + d.value, 0)
+
+  if (!mounted) return <div style={{ width: '100%', height: 320, background: 'transparent' }} />
 
   // Sort largest first so small slices are grouped at end
   const sorted = [...data].sort((a, b) => b.value - a.value)

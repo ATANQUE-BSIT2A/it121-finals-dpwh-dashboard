@@ -1,15 +1,15 @@
 import { supabase } from './supabase'
 import type { Project } from '@/types'
 
-export async function fetchAllRows(selectQuery: any) {
+export async function fetchAllRows(selectQuery: any, maxRows: number = 10000) {
   const allData: any[] = [];
   let page = 0;
   const pageSize = 1000;
   
-  while (true) {
+  while (allData.length < maxRows) {
     const { data, error } = await selectQuery.range(page * pageSize, (page + 1) * pageSize - 1);
     if (error) {
-      console.error('Error fetching all rows:', error);
+      console.error('Error fetching rows:', error);
       break;
     }
     if (!data || data.length === 0) break;
@@ -18,7 +18,7 @@ export async function fetchAllRows(selectQuery: any) {
     page++;
   }
   
-  return allData;
+  return allData.slice(0, maxRows);
 }
 
 export async function getDashboardStats() {
