@@ -5,8 +5,7 @@ import AnalyticsYearChart from '@/components/analytics/AnalyticsYearChart'
 import AnalyticsProgressChart from '@/components/analytics/AnalyticsProgressChart'
 import AnalyticsContractorsTable from '@/components/analytics/AnalyticsContractorsTable'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 300
 
 export default async function AnalyticsPage() {
   const bucketQueries = Array.from({ length: 10 }, (_, i) => {

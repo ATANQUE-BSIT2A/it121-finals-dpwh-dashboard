@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import AppLayout from '@/components/AppLayout'
 import ProjectDrawer from '@/components/ProjectDrawer'
@@ -14,10 +14,13 @@ export default function ProjectsPage() {
   const [projects, setProjects]         = useState<any[]>([])
   const [totalCount, setTotalCount]     = useState(0)
   const [loading, setLoading]           = useState(true)
+  const [errorMsg, setErrorMsg]         = useState('')
   const [selected, setSelected]         = useState<any>(null)
   const [page, setPage]                 = useState(1)
+  const requestIdRef = useRef(0)
 
   // Filters
+  const [rawSearch, setRawSearch] = useState('')
   const [search, setSearch]       = useState('')
   const [region, setRegion]       = useState('')
   const [category, setCategory]   = useState('')
@@ -30,15 +33,39 @@ export default function ProjectsPage() {
   const [categories, setCategories] = useState<string[]>([])
   const [years, setYears]           = useState<string[]>([])
 
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(rawSearch), 400)
+    return () => clearTimeout(t)
+  }, [rawSearch])
+
   // Load filter options once
   useEffect(() => {
     const loadOptions = async () => {
+      const cacheKey = 'dpwh:project-options:v1'
+      const cached = typeof window !== 'undefined' ? window.localStorage.getItem(cacheKey) : null
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached) as { ts: number; categories: string[]; years: string[] }
+          if (Date.now() - parsed.ts < 24 * 60 * 60 * 1000) {
+            setCategories(parsed.categories || [])
+            setYears(parsed.years || [])
+            return
+          }
+        } catch {}
+      }
+
       const [{ data: c }, { data: y }] = await Promise.all([
-        supabase.from('dpwh_projects').select('category').not('category','is',null),
-        supabase.from('dpwh_projects').select('infra_year').not('infra_year','is',null),
+        supabase.from('dpwh_projects').select('category, count:contract_id.count()').not('category', 'is', null),
+        supabase.from('dpwh_projects').select('infra_year, count:contract_id.count()').not('infra_year', 'is', null),
       ])
-      setCategories([...new Set(c?.map((x: any) => x.category))].sort() as string[])
-      setYears([...new Set(y?.map((x: any) => x.infra_year))].sort().reverse() as string[])
+
+      const cats = (c || []).map((r: any) => r.category).filter(Boolean).sort() as string[]
+      const yrs = (y || []).map((r: any) => r.infra_year).filter(Boolean).sort().reverse() as string[]
+      setCategories(cats)
+      setYears(yrs)
+      try {
+        window.localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), categories: cats, years: yrs }))
+      } catch {}
     }
     loadOptions()
   }, [])
@@ -46,10 +73,14 @@ export default function ProjectsPage() {
   // Fetch projects
   const fetchProjects = useCallback(async () => {
     setLoading(true)
-    let q = supabase.from('dpwh_projects').select('contract_id,description,region,province,category,status,budget,progress,start_date,contractor', { count: 'exact' })
+    setErrorMsg('')
+    const requestId = ++requestIdRef.current
+
+    let q = supabase.from('dpwh_projects').select('contract_id,description,region,province,category,status,budget,progress,start_date,contractor', { count: 'estimated' })
 
     if (search.trim()) {
-      q = q.or(`description.ilike.%${search}%,contract_id.ilike.%${search}%,contractor.ilike.%${search}%`)
+      const s = search.trim()
+      q = q.or(`description.ilike.%${s}%,contract_id.ilike.%${s}%,contractor.ilike.%${s}%,province.ilike.%${s}%,program_name.ilike.%${s}%`)
     }
     if (region)   q = q.eq('region', region)
     if (category) q = q.eq('category', category)
@@ -61,6 +92,16 @@ export default function ProjectsPage() {
       .order(sortBy, { ascending: sortDir === 'asc' })
       .range(from, from + PER_PAGE - 1)
 
+    if (requestId !== requestIdRef.current) return
+
+    if (error) {
+      setProjects([])
+      setTotalCount(0)
+      setErrorMsg(error.message || 'Failed to load projects.')
+      setLoading(false)
+      return
+    }
+
     setProjects(data || [])
     setTotalCount(count || 0)
     setLoading(false)
@@ -69,9 +110,9 @@ export default function ProjectsPage() {
   useEffect(() => { setPage(1) }, [search, region, category, status, year])
   useEffect(() => { fetchProjects() }, [fetchProjects])
 
-  const clearAll = () => { setSearch(''); setRegion(''); setCategory(''); setStatus(''); setYear('') }
-  const hasFilters = search || region || category || status || year
-  const totalPages = Math.ceil(totalCount / PER_PAGE)
+  const clearAll = () => { setRawSearch(''); setSearch(''); setRegion(''); setCategory(''); setStatus(''); setYear('') }
+  const hasFilters = rawSearch || region || category || status || year
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE))
 
   return (
     <AppLayout title="Projects">
@@ -84,8 +125,8 @@ export default function ProjectsPage() {
               className="input"
               style={{ paddingLeft: 30, height: 34, fontSize: '0.8rem', width: '100%' }}
               placeholder="Search by name, ID, or contractor…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
+              value={rawSearch}
+              onChange={e => setRawSearch(e.target.value)}
             />
           </div>
 
@@ -162,7 +203,11 @@ export default function ProjectsPage() {
       {/* Results header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
         <span style={{ fontSize: '0.8rem', color: '#8b949e' }}>
-          {loading ? 'Loading…' : `Showing ${((page-1)*PER_PAGE)+1}–${Math.min(page*PER_PAGE, totalCount)} of ${totalCount.toLocaleString()} projects`}
+          {loading
+            ? 'Loading…'
+            : totalCount > 0
+              ? `Showing ${((page - 1) * PER_PAGE) + 1}–${Math.min(page * PER_PAGE, totalCount)} of ${totalCount.toLocaleString()} projects`
+              : `Showing ${projects.length.toLocaleString()} projects`}
         </span>
         <span style={{ fontSize: '0.75rem', color: '#484f58' }}>
           Page {page} of {totalPages.toLocaleString()}
@@ -174,6 +219,8 @@ export default function ProjectsPage() {
         <div style={{ overflowX: 'auto' }}>
           {loading ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#484f58', fontSize: '0.875rem' }}>Loading projects…</div>
+          ) : errorMsg ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: '#f85149', fontSize: '0.875rem' }}>{errorMsg}</div>
           ) : projects.length === 0 ? (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#484f58', fontSize: '0.875rem' }}>No projects match your filters.</div>
           ) : (

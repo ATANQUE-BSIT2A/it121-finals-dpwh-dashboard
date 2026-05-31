@@ -5,7 +5,7 @@
 export const STATUSES: { label: string; value: string; color: string; bg: string; border: string }[] = [
   { label: 'Completed',       value: 'Completed',       color: '#3fb950', bg: 'rgba(63,185,80,0.15)',   border: 'rgba(63,185,80,0.35)'   },
   { label: 'On-Going',        value: 'On-Going',        color: '#58a6ff', bg: 'rgba(88,166,255,0.15)',  border: 'rgba(88,166,255,0.35)'  },
-  { label: 'For Procurement', value: 'For Procurement', color: '#a371f7', bg: 'rgba(163,113,247,0.15)', border: 'rgba(163,113,247,0.35)' },
+  { label: 'For Procurement', value: 'For Procurement', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)',  border: 'rgba(245,158,11,0.35)'  },
   { label: 'Not Yet Started', value: 'Not Yet Started', color: '#e3b341', bg: 'rgba(227,179,65,0.15)',  border: 'rgba(227,179,65,0.35)'  },
   { label: 'Suspended',       value: 'Suspended',       color: '#d29922', bg: 'rgba(210,153,34,0.15)',  border: 'rgba(210,153,34,0.35)'  },
   { label: 'Terminated',      value: 'Terminated',      color: '#f85149', bg: 'rgba(248,81,73,0.15)',   border: 'rgba(248,81,73,0.35)'   },

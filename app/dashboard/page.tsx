@@ -6,8 +6,7 @@ import ProjectsByYearChart from '@/components/dashboard/ProjectsByYearChart'
 import RecentProjectsTable from '@/components/dashboard/RecentProjectsTable'
 import { supabase } from '@/lib/supabase'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 300
 
 export default async function DashboardPage() {
   const [
