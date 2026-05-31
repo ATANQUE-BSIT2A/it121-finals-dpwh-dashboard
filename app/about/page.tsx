@@ -1,11 +1,11 @@
 import AppLayout from '@/components/AppLayout'
 
 const teamMembers = [
-  { name: 'Albert', photo: '/photos/ALBERT.png' },
-  { name: 'Allen', photo: '/photos/ALLEN.png' },
-  { name: 'Julz', photo: '/photos/JULZ.png' },
-  { name: 'Raven', photo: '/photos/RAVEN.png' },
-  { name: 'Roj', photo: '/photos/ROJ_.png' },
+  { name: 'Albert Matthew V. Calibjo', photo: '/photos/ALBERT.png', age: 20, location: 'Mandog, Maasin, Iloilo', position: 'Foreman', amountStolen: '69,000 php' },
+  { name: 'Allen James A. Jolampong', photo: '/photos/ALLEN.png', age: 20, location: 'Nasa comment section ang link', position: 'doggy', amountStolen: '6.7M php' },
+  { name: 'Julz Benedict D. Cometa', photo: '/photos/JULZ.png', age: 20, location: 'Bingo Plus link pls', position: 'Tamby', amountStolen: '420M php' },
+  { name: 'Raven T. Animas', photo: '/photos/RAVEN.png', age: 20, location: 'Brgy. Mohon Arevalo, Iloilo City', position: 'Bata ni Henry Sy', amountStolen: '100M php' },
+  { name: 'Roj Gabriel P. Atanque', photo: '/photos/ROJ_.png', age: 20, location: 'Don Francisco Village, Jaro, Iloilo City', position: 'Helicopter', amountStolen: '120M php' },
 ]
 
 export default function AboutPage() {
@@ -54,10 +54,17 @@ export default function AboutPage() {
                 color: '#e6edf3', 
                 fontSize: '1rem', 
                 fontWeight: 600, 
-                margin: 0 
+                margin: 0,
+                marginBottom: '0.5rem'
               }}>
                 {member.name}
               </p>
+              <div style={{ fontSize: '0.85rem', color: '#8b949e', lineHeight: 1.6 }}>
+                <p style={{ margin: 0 }}>Age: {member.age}</p>
+                <p style={{ margin: 0 }}>Location: {member.location}</p>
+                <p style={{ margin: 0 }}>Position: {member.position}</p>
+                <p style={{ margin: 0 }}>Amount Stolen: {member.amountStolen}</p>
+              </div>
             </div>
           ))}
         </div>

@@ -17,18 +17,18 @@ export default function Sidebar() {
   return (
     <nav className="sidebar">
       {/* Logo */}
-      <div style={{ padding: '1rem', borderBottom: '1px solid #21262d', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ padding: '1rem', borderBottom: '1px solid #21262d', display: 'flex', alignItems: 'center', gap: 12 }}>
         <Image
           src="/logos/DPWH.png"
           alt="DPWH"
-          width={38}
-          height={38}
+          width={56}
+          height={56}
           style={{ objectFit: 'contain', flexShrink: 0 }}
           priority
         />
         <div>
-          <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#e6edf3', lineHeight: 1.2 }}>DPWH</div>
-          <div style={{ fontSize: '0.65rem', color: '#8b949e', lineHeight: 1.2 }}>Infrastructure Dashboard</div>
+          <div style={{ fontSize: '1rem', fontWeight: 700, color: '#e6edf3', lineHeight: 1.2 }}>DPWH</div>
+          <div style={{ fontSize: '0.75rem', color: '#8b949e', lineHeight: 1.2 }}>Infrastructure Dashboard</div>
         </div>
       </div>
 
