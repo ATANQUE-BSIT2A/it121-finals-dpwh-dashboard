@@ -3,43 +3,34 @@ import type { Project } from '@/types'
 
 export async function fetchAllRows(selectQuery: any, maxRows: number = 10000) {
   const pageSize = 1000;
-  
-  // Clone the query to get count without ranges
-  // We use a separate select to avoid modifying the original query's columns if it was already set
-  const { count, error: countError } = await selectQuery.select('*', { count: 'exact', head: true });
-  
-  if (countError) {
-    console.error('Error getting count:', countError);
-    return [];
-  }
-
-  const totalToFetch = Math.min(count || 0, maxRows);
+  const totalToFetch = maxRows; 
   const numPages = Math.ceil(totalToFetch / pageSize);
   const pages = Array.from({ length: numPages }, (_, i) => i);
   
   const allData: any[] = [];
-  const concurrencyLimit = 5; // Reduced concurrency for stability
+  const concurrencyLimit = 2; // Further reduced for high stability
   
   for (let i = 0; i < pages.length; i += concurrencyLimit) {
     const chunk = pages.slice(i, i + concurrencyLimit);
     try {
       const results = await Promise.all(
-        chunk.map(page => {
-          // IMPORTANT: Create a fresh query for each page to avoid sharing state
-          const pageQuery = selectQuery.select('*');
-          return pageQuery
-            .order('contract_id', { ascending: true }) // Stable order for ranges
+        chunk.map(page => 
+          selectQuery
             .range(page * pageSize, (page + 1) * pageSize - 1)
             .then((res: any) => {
               if (res.error) throw res.error;
               return res.data || [];
-            });
-        })
+            })
+        )
       );
-      allData.push(...results.flat());
+      const flattened = results.flat();
+      if (flattened.length === 0) break; 
+      allData.push(...flattened);
+      if (flattened.length < chunk.length * pageSize) break; 
     } catch (e) {
-      console.error('Error in parallel fetch chunk:', e);
-      break; // Stop if we hit a timeout
+      // Log more details but don't crash
+      console.error('Fetch chunk failed, continuing with partial data:', e);
+      continue; 
     }
   }
   
@@ -58,7 +49,7 @@ export async function getTotalBudget() {
   const pages = Array.from({ length: numPages }, (_, i) => i);
   
   let total = 0;
-  const concurrencyLimit = 20; // Higher concurrency for just one column
+  const concurrencyLimit = 10; // Reduced for stability
   
   for (let i = 0; i < pages.length; i += concurrencyLimit) {
     const chunk = pages.slice(i, i + concurrencyLimit);
@@ -76,6 +67,22 @@ export async function getTotalBudget() {
   }
   
   return total;
+}
+
+export async function getYearStats() {
+  const years = ['2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'];
+  
+  const results = await Promise.all(
+    years.map(async (year) => {
+      const { count, error } = await supabase
+        .from('dpwh_projects')
+        .select('*', { count: 'exact', head: true })
+        .eq('infra_year', year);
+      return { year, count: count || 0 };
+    })
+  );
+
+  return results.filter(r => r.count > 0);
 }
 
 export async function getStatusCounts() {

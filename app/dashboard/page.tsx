@@ -8,7 +8,7 @@ import AnalyticsCategoryChart from '@/components/analytics/AnalyticsCategoryChar
 import AnalyticsProgressChart from '@/components/analytics/AnalyticsProgressChart'
 import AnalyticsContractorsTable from '@/components/analytics/AnalyticsContractorsTable'
 import { supabase } from '@/lib/supabase'
-import { fetchAllRows, getTotalBudget, getStatusCounts } from '@/lib/queries'
+import { fetchAllRows, getTotalBudget, getStatusCounts, getYearStats } from '@/lib/queries'
 
 export const revalidate = 300
 
@@ -19,22 +19,22 @@ export default async function DashboardPage() {
     { data: recentData },
     fullBudget,
     globalStatuses,
+    globalYearStats,
   ] = await Promise.all([
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
-    fetchAllRows(supabase.from('dpwh_projects'), 50000),
+    fetchAllRows(supabase.from('dpwh_projects').select('region, status, budget, infra_year, category, progress, contractor').order('infra_year', { ascending: false }).order('contract_id', { ascending: true }), 10000),
     supabase.from('dpwh_projects')
       .select('contract_id, description, region, category, budget, status, progress')
-      .not('start_date', 'is', null)
-      .order('start_date', { ascending: false })
+      .order('infra_year', { ascending: false })
       .limit(10),
     getTotalBudget(),
     getStatusCounts(),
+    getYearStats(),
   ])
 
   // Calculate stats from sample
   const budgetByRegion: Record<string, number> = {}
   const statusCountsFromSample: Record<string, number> = {}
-  const yearStats: Record<string, { count: number, budget: number }> = {}
   const categoryMap: Record<string, { count: number, budget: number }> = {}
   const progressBuckets = [0,0,0,0,0,0,0,0,0,0]
   const contractorMap: Record<string, { count: number, totalBudget: number, totalProgress: number, progressCount: number }> = {}
@@ -47,19 +47,6 @@ export default async function DashboardPage() {
     // Budget by Region
     if (p.region) {
       budgetByRegion[p.region] = (budgetByRegion[p.region] || 0) + b
-    }
-
-    // Status Counts from sample (fallback)
-    if (p.status) {
-      statusCountsFromSample[p.status] = (statusCountsFromSample[p.status] || 0) + 1
-    }
-
-    // Year Stats
-    if (p.infra_year) {
-      const y = p.infra_year
-      if (!yearStats[y]) yearStats[y] = { count: 0, budget: 0 }
-      yearStats[y].count += 1
-      yearStats[y].budget += b
     }
 
     // Category Stats
@@ -95,13 +82,10 @@ export default async function DashboardPage() {
     .slice(0, 10)
 
   // Use global statuses for the donut chart
-  const byStatus = globalStatuses.length > 0 
-    ? globalStatuses 
-    : Object.entries(statusCountsFromSample).map(([name, value]) => ({ name, value }))
+  const byStatus = globalStatuses
 
-  const byYear = Object.entries(yearStats)
-    .map(([year, { count, budget }]) => ({ year, count, budget }))
-    .sort((a, b) => a.year.localeCompare(b.year))
+  // Use global year stats for the bar chart
+  const byYear = globalYearStats.sort((a, b) => a.year.localeCompare(b.year))
 
   const categoryData = Object.entries(categoryMap)
     .map(([category, { count, budget }]) => ({ category, count, budget }))
