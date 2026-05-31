@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { X, ExternalLink, Loader } from 'lucide-react'
+import { X } from 'lucide-react'
 import { formatPeso, formatDate, progressColor } from '@/lib/utils'
 import { statusBadgeStyle } from '@/lib/statuses'
 
@@ -109,39 +109,53 @@ export default function ProjectDrawer({ project, onClose }: { project: any; onCl
           </div>
         </div>
 
-        {/* AI Research */}
-        <div className="card">
-          <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e6edf3', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: '0.9rem' }}>🤖</span> AI Research Assistant
-          </h4>
-          <p style={{ fontSize: '0.75rem', color: '#484f58', marginBottom: 12 }}>
-            Searching for related news, reports, and updates about this project…
+        <div className="card" style={{ marginTop: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <span style={{ fontSize: '1rem' }}>🤖</span>
+            <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#e6edf3', margin: 0 }}>
+              AI Research Assistant
+            </h4>
+          </div>
+          <p style={{ fontSize: '0.75rem', color: '#484f58', marginBottom: 12, lineHeight: 1.5 }}>
+            Related links and search resources for this project.
           </p>
+
           {aiLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#484f58', fontSize: '0.8rem' }}>
-              <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} />
-              <span>Searching…</span>
+              <div style={{
+                width: 12, height: 12, borderRadius: '50%',
+                border: '2px solid #58a6ff', borderTopColor: 'transparent',
+                animation: 'aispin 0.8s linear infinite', flexShrink: 0,
+              }} />
+              Searching for related resources…
             </div>
           ) : aiResults.length === 0 ? (
-            <p style={{ fontSize: '0.8rem', color: '#484f58' }}>No related results found for this project.</p>
+            <p style={{ fontSize: '0.8rem', color: '#484f58' }}>No results found.</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {aiResults.map((r, i) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {aiResults.map((r: any, i: number) => (
                 <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                  <div style={{
-                    padding: '10px 12px', borderRadius: 8,
-                    background: '#0d1117', border: '1px solid #30363d',
-                    transition: 'border-color 0.15s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#58a6ff')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = '#30363d')}
+                  <div
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      background: '#0d1117',
+                      border: '1px solid #30363d',
+                      transition: 'border-color 0.15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = '#58a6ff')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = '#30363d')}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, gap: 8 }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#58a6ff', lineHeight: 1.3 }}>{r.title}</span>
-                      <ExternalLink size={12} style={{ color: '#484f58', flexShrink: 0, marginTop: 2 }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#58a6ff', lineHeight: 1.3 }}>
+                        {r.title}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#484f58', flexShrink: 0 }}>↗</span>
                     </div>
-                    <p style={{ fontSize: '0.75rem', color: '#8b949e', margin: '0 0 4px', lineHeight: 1.4 }}>{r.summary}</p>
-                    <span style={{ fontSize: '0.68rem', color: '#484f58' }}>{r.source}</span>
+                    <p style={{ fontSize: '0.72rem', color: '#8b949e', margin: '0 0 4px', lineHeight: 1.4 }}>
+                      {r.summary}
+                    </p>
+                    <span style={{ fontSize: '0.65rem', color: '#484f58' }}>{r.source}</span>
                   </div>
                 </a>
               ))}
@@ -150,7 +164,7 @@ export default function ProjectDrawer({ project, onClose }: { project: any; onCl
         </div>
       </div>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`@keyframes aispin { to { transform: rotate(360deg); } }`}</style>
     </>
   )
 }
