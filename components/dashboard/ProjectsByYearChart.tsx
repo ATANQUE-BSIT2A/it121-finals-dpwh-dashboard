@@ -29,7 +29,11 @@ export default function ProjectsByYearChart({ data }: { data: { year: string; co
           <Tooltip
             contentStyle={{ background: '#1c1c1e', border: '1px solid #38383a', borderRadius: 12, color: '#f5f5f7', fontSize: 14, boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}
             itemStyle={{ color: '#f5f5f7' }}
-            formatter={(v: any) => [Number(v).toLocaleString(), 'Projects']}
+            formatter={(v: any, name: string) => {
+              if (name === 'count') return [Number(v).toLocaleString(), 'Projects'];
+              if (name === 'totalBudget') return ['₱' + (Number(v) / 1e9).toFixed(2) + 'B', 'Budget'];
+              return [v, name];
+            }}
           />
           <Bar dataKey="count" fill="#0a84ff" radius={[8, 8, 0, 0]} barSize={60} />
         </BarChart>

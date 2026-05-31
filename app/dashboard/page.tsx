@@ -8,7 +8,7 @@ import AnalyticsCategoryChart from '@/components/analytics/AnalyticsCategoryChar
 import AnalyticsProgressChart from '@/components/analytics/AnalyticsProgressChart'
 import AnalyticsContractorsTable from '@/components/analytics/AnalyticsContractorsTable'
 import { supabase } from '@/lib/supabase'
-import { fetchAllRows, getTotalBudget, getStatusCounts, getYearStats, getBudgetByRegion } from '@/lib/queries'
+import { fetchAllRows, getTotalBudget, getStatusCounts, getYearStats, getBudgetByRegion, getProjectsByCategory } from '@/lib/queries'
 
 export const revalidate = 300
 
@@ -20,6 +20,7 @@ export default async function DashboardPage() {
     globalStatuses,
     globalYearStats,
     globalBudgetByRegion,
+    globalCategories,
   ] = await Promise.all([
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
     fetchAllRows(supabase.from('dpwh_projects').select('region, status, budget, infra_year, category, progress, contractor').order('infra_year', { ascending: false }).order('contract_id', { ascending: true }), 10000),
@@ -30,23 +31,15 @@ export default async function DashboardPage() {
     getStatusCounts(),
     getYearStats(),
     getBudgetByRegion(),
+    getProjectsByCategory(),
   ])
 
   // Calculate stats from sample
-  const budgetByRegion: Record<string, number> = {}
-  const categoryMap: Record<string, { count: number, budget: number }> = {}
   const progressBuckets = [0,0,0,0,0,0,0,0,0,0]
   const contractorMap: Record<string, { count: number, totalBudget: number, totalProgress: number, progressCount: number }> = {}
   
   for (const p of statsData || []) {
     const b = p.budget || 0
-
-    // Category Stats
-    if (p.category) {
-      if (!categoryMap[p.category]) categoryMap[p.category] = { count: 0, budget: 0 }
-      categoryMap[p.category].count += 1
-      categoryMap[p.category].budget += b
-    }
 
     // Progress Buckets
     const prog = Math.max(0, Math.min(100, p.progress || 0))
@@ -85,9 +78,8 @@ export default async function DashboardPage() {
   // Use global year stats for the bar chart
   const byYear = globalYearStats.sort((a, b) => a.year.localeCompare(b.year))
 
-  const categoryData = Object.entries(categoryMap)
-    .map(([category, { count, budget }]) => ({ category, count, budget }))
-    .sort((a, b) => b.count - a.count)
+  const categoryData = globalCategories
+    .map(c => ({ category: c.category, count: c.count, budget: c.totalBudget }))
     .slice(0, 15)
 
   const progressData = progressBuckets.map((count, i) => ({

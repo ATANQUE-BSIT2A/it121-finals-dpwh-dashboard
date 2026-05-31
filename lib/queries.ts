@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import type { Project } from '@/types'
+import { REGIONS } from './regions'
 
 export async function fetchAllRows(selectQuery: any, maxRows: number = 10000) {
   const pageSize = 1000;
@@ -47,16 +48,30 @@ export async function getYearStats() {
   
   const results = await Promise.all(
     years.map(async (year) => {
-      const { count, error } = await supabase
-        .from('dpwh_projects')
-        .select('*', { count: 'exact', head: true })
-        .eq('infra_year', year);
+      let totalBudget = 0;
+      let count = 0;
+      let start = 0;
+      const pageSize = 5000;
+      
+      while (true) {
+        const { data, error, count: yearCount } = await supabase
+          .from('dpwh_projects')
+          .select('budget', { count: 'exact' })
+          .eq('infra_year', year)
+          .range(start, start + pageSize - 1);
+          
+        if (error || !data || data.length === 0) {
+          if (start === 0 && yearCount) count = yearCount;
+          break;
+        }
         
-      if (error) {
-        console.error(`Error counting year ${year}:`, error);
-        return { year, count: 0 };
+        if (start === 0) count = yearCount || 0;
+        data.forEach(p => totalBudget += (p.budget || 0));
+        if (data.length < pageSize) break;
+        start += pageSize;
       }
-      return { year, count: count || 0 };
+      
+      return { year, count, totalBudget };
     })
   );
 
@@ -80,15 +95,14 @@ export async function getStatusCounts() {
 }
 
 export async function getDashboardStats() {
-  const [total, budgetData, completed, ongoing, progressData] = await Promise.all([
+  const [total, budgetSum, completed, ongoing, progressData] = await Promise.all([
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
-    fetchAllRows(supabase.from('dpwh_projects').select('budget')),
+    getTotalBudget(),
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }).eq('status', 'Completed'),
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }).eq('status', 'On-Going'),
     fetchAllRows(supabase.from('dpwh_projects').select('progress')),
   ]);
 
-  const budgetSum = budgetData.reduce((sum, p) => sum + (p.budget || 0), 0) || 0;
   const progressSum = progressData.filter(p => p.progress !== null).reduce((sum, p) => sum + (p.progress as number), 0) || 0;
   const progressCount = progressData.filter(p => p.progress !== null).length || 1;
 
@@ -172,11 +186,7 @@ export async function getProjectById(contractId: string) {
 }
 
 export async function getBudgetByRegion() {
-  const regions = [
-    'NCR', 'Region I', 'Region II', 'Region III', 'Region IV-A', 'Region IV-B', 
-    'Region V', 'Region VI', 'Region VII', 'Region VIII', 'Region IX', 
-    'Region X', 'Region XI', 'Region XII', 'Region XIII', 'CAR', 'BARMM'
-  ];
+  const regions = REGIONS.map(r => r.value);
   
   const results = await Promise.all(
     regions.map(async (region) => {
@@ -207,77 +217,62 @@ export async function getBudgetByRegion() {
 }
 
 export async function getProjectsByStatus() {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('status'));
-  if (!data) return [];
+  const statuses = ['Completed', 'On-Going', 'For Procurement', 'Not Yet Started', 'Terminated', 'Suspended'];
+  
+  const results = await Promise.all(
+    statuses.map(async (status) => {
+      const { count, error } = await supabase
+        .from('dpwh_projects')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', status);
+      return { status, count: count || 0 };
+    })
+  );
 
-  const statusData: Record<string, number> = {};
-  data.forEach(item => {
-    if (item.status) {
-      statusData[item.status] = (statusData[item.status] || 0) + 1;
-    }
-  });
-
-  return Object.entries(statusData).map(([status, count]) => ({ status, count }));
+  return results.filter(r => r.count > 0);
 }
 
 export async function getProjectsByCategory() {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('category, budget'));
-  if (!data) return [];
-
-  const categoryData: Record<string, { count: number; totalBudget: number }> = {};
-  data.forEach(item => {
-    if (item.category) {
-      if (!categoryData[item.category]) {
-        categoryData[item.category] = { count: 0, totalBudget: 0 };
+  const categories = await getCategories();
+  
+  const results = await Promise.all(
+    categories.map(async (category) => {
+      let totalBudget = 0;
+      let count = 0;
+      let start = 0;
+      const pageSize = 5000;
+      
+      while (true) {
+        const { data, error, count: catCount } = await supabase
+          .from('dpwh_projects')
+          .select('budget', { count: 'exact' })
+          .eq('category', category)
+          .range(start, start + pageSize - 1);
+          
+        if (error || !data || data.length === 0) {
+          if (start === 0 && catCount) count = catCount;
+          break;
+        }
+        
+        if (start === 0) count = catCount || 0;
+        data.forEach(p => totalBudget += (p.budget || 0));
+        if (data.length < pageSize) break;
+        start += pageSize;
       }
-      categoryData[item.category].count += 1;
-      categoryData[item.category].totalBudget += item.budget || 0;
-    }
-  });
+      
+      return { category, count, totalBudget };
+    })
+  );
 
-  return Object.entries(categoryData).map(([category, data]) => ({ category, count: data.count, totalBudget: data.totalBudget }));
+  return results.filter(r => r.count > 0).sort((a, b) => b.count - a.count);
 }
 
 export async function getProjectsByYear() {
-  const data = await fetchAllRows(supabase.from('dpwh_projects').select('infra_year, budget'));
-  if (!data) return [];
-
-  const yearData: Record<string, { count: number; totalBudget: number }> = {};
-  data.forEach(item => {
-    if (item.infra_year) {
-      if (!yearData[item.infra_year]) {
-        yearData[item.infra_year] = { count: 0, totalBudget: 0 };
-      }
-      yearData[item.infra_year].count += 1;
-      yearData[item.infra_year].totalBudget += item.budget || 0;
-    }
-  });
-
-  return Object.entries(yearData)
-    .map(([year, data]) => ({ year, count: data.count, totalBudget: data.totalBudget }))
-    .sort((a, b) => a.year.localeCompare(b.year));
+  return getYearStats();
 }
 
 export function getRegions() {
-  return [
-    'NCR',
-    'CAR',
-    'Region I',
-    'Region II',
-    'Region III',
-    'Region IV-A',
-    'Region IV-B',
-    'Region V',
-    'Region VI',
-    'Region VII',
-    'Region VIII',
-    'Region IX',
-    'Region X',
-    'Region XI',
-    'Region XII',
-    'Region XIII',
-    'NIR',
-  ];
+  return REGIONS.map(r => r.value);
 }
 
 export async function getProvincesByRegion(region: string) {
