@@ -37,8 +37,9 @@ export default function BudgetByRegionChart({ data }: Props) {
           <YAxis
             type="category"
             dataKey="label"
-            tick={{ fill: '#86868b', fontSize: 13, whiteSpace: 'nowrap' }}
-            tickLine={false} axisLine={false}
+            tick={{ fill: '#86868b', fontSize: 13 }}
+            tickLine={false}
+            axisLine={false}
             width={110}
           />
           <Tooltip

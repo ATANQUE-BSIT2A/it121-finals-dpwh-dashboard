@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const [
     { count: totalCount },
     statsData,
-    recentData,
+    { data: recentData },
   ] = await Promise.all([
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
     fetchAllRows(supabase.from('dpwh_projects').select('contract_id, region, status, budget, infra_year, category, progress, contractor')),
