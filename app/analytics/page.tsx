@@ -9,47 +9,53 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function AnalyticsPage() {
-  const [
-    { data: categoryData },
-    { data: yearStatusData },
-    { data: progressData },
-    { data: contractorData },
-  ] = await Promise.all([
+  const bucketQueries = Array.from({ length: 10 }, (_, i) => {
+    const min = i * 10
+    const max = i * 10 + 10
+    const q = supabase
+      .from('dpwh_projects')
+      .select('*', { count: 'exact', head: true })
+      .not('progress', 'is', null)
+      .gte('progress', min)
+    return i === 9 ? q.lte('progress', 100) : q.lt('progress', max)
+  })
+
+  const results = await Promise.all([
     supabase.from('dpwh_projects')
-      .select('category, budget, status')
+      .select('category, count:contract_id.count(), budget:budget.sum()')
       .not('category', 'is', null),
 
     supabase.from('dpwh_projects')
-      .select('infra_year, status')
+      .select('infra_year, status, count:contract_id.count()')
       .not('infra_year', 'is', null)
       .not('status', 'is', null),
 
-    supabase.from('dpwh_projects')
-      .select('progress')
-      .not('progress', 'is', null),
+    ...bucketQueries,
 
     supabase.from('dpwh_projects')
-      .select('contractor, budget, progress')
+      .select('contractor, count:contract_id.count(), budget:budget.sum(), avgProgress:progress.avg()')
       .not('contractor', 'is', null),
   ])
 
-  const catMap: Record<string, { count: number; budget: number }> = {}
-  for (const r of categoryData || []) {
-    const k = r.category || 'Unknown'
-    if (!catMap[k]) catMap[k] = { count: 0, budget: 0 }
-    catMap[k].count += 1
-    catMap[k].budget += Number(r.budget || 0)
-  }
-  const byCategory = Object.entries(catMap)
-    .map(([category, v]) => ({ category, ...v }))
+  const categoryAgg = results[0]?.data
+  const yearStatusAgg = results[1]?.data
+  const bucketCounts = results.slice(2, 12)
+  const contractorAgg = results[12]?.data
+
+  const byCategory = (categoryAgg || [])
+    .map((r: any) => ({
+      category: r.category || 'Unknown',
+      count: Number(r.count || 0),
+      budget: Number(r.budget || 0),
+    }))
     .sort((a, b) => b.count - a.count)
 
   const yearMap: Record<string, Record<string, number>> = {}
-  for (const r of yearStatusData || []) {
+  for (const r of yearStatusAgg || []) {
     const y = r.infra_year || 'Unknown'
     const s = r.status || 'Unknown'
     if (!yearMap[y]) yearMap[y] = {}
-    yearMap[y][s] = (yearMap[y][s] || 0) + 1
+    yearMap[y][s] = (yearMap[y][s] || 0) + Number(r.count || 0)
   }
   const byYearStatus = Object.entries(yearMap)
     .map(([year, statuses]) => ({ year, ...statuses }))
@@ -57,30 +63,17 @@ export default async function AnalyticsPage() {
 
   const buckets = Array.from({ length: 10 }, (_, i) => ({
     range: `${i * 10}–${i * 10 + 10}%`,
-    count: 0,
+    count: Number(bucketCounts[i]?.count || 0),
     min: i * 10,
     max: i * 10 + 10,
   }))
-  for (const r of progressData || []) {
-    const p = Number(r.progress || 0)
-    const idx = Math.min(Math.floor(p / 10), 9)
-    buckets[idx].count += 1
-  }
 
-  const conMap: Record<string, { count: number; budget: number; progressSum: number }> = {}
-  for (const r of contractorData || []) {
-    const k = r.contractor?.slice(0, 60) || 'Unknown'
-    if (!conMap[k]) conMap[k] = { count: 0, budget: 0, progressSum: 0 }
-    conMap[k].count += 1
-    conMap[k].budget += Number(r.budget || 0)
-    conMap[k].progressSum += Number(r.progress || 0)
-  }
-  const topContractors = Object.entries(conMap)
-    .map(([contractor, v]) => ({
-      contractor,
-      count: v.count,
-      budget: v.budget,
-      avgProgress: v.count > 0 ? v.progressSum / v.count : 0,
+  const topContractors = (contractorAgg || [])
+    .map((r: any) => ({
+      contractor: (r.contractor || 'Unknown').slice(0, 60),
+      count: Number(r.count || 0),
+      budget: Number(r.budget || 0),
+      avgProgress: Number(r.avgProgress || 0),
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 20)
