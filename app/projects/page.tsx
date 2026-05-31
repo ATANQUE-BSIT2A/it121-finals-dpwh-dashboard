@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import AppLayout from '@/components/AppLayout'
 import ProjectDrawer from '@/components/ProjectDrawer'
 import { formatPeso, truncate, statusClass, progressColor } from '@/lib/utils'
+import { getRegions } from '@/lib/queries'
 import { Search, Filter, X } from 'lucide-react'
 
 const PER_PAGE = 50
@@ -29,7 +30,7 @@ export default function ProjectsPage() {
   const [sortDir, setSortDir]     = useState<'asc'|'desc'>('desc')
 
   // Filter options
-  const [regions, setRegions]       = useState<string[]>([])
+  const regions = getRegions()
   const [provinces, setProvinces]   = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [years, setYears]           = useState<string[]>([])
@@ -37,12 +38,10 @@ export default function ProjectsPage() {
   // Load filter options once
   useEffect(() => {
     const loadOptions = async () => {
-      const [{ data: r }, { data: c }, { data: y }] = await Promise.all([
-        supabase.from('dpwh_projects').select('region').not('region','is',null),
+      const [{ data: c }, { data: y }] = await Promise.all([
         supabase.from('dpwh_projects').select('category').not('category','is',null),
         supabase.from('dpwh_projects').select('infra_year').not('infra_year','is',null),
       ])
-      setRegions([...new Set(r?.map((x: any) => x.region))].sort() as string[])
       setCategories([...new Set(c?.map((x: any) => x.category))].sort() as string[])
       setYears([...new Set(y?.map((x: any) => x.infra_year))].sort().reverse() as string[])
     }

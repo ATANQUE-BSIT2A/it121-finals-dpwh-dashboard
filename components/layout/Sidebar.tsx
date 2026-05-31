@@ -3,6 +3,7 @@
 import { Home, FileText, BarChart3, Map, Info } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 
 const navItems = [
   { icon: Home, label: 'Dashboard', href: '/dashboard' },
@@ -17,9 +18,12 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar-desktop glass-strong fixed left-0 top-0 h-full z-40 transition-all duration-300" style={{ borderRadius: 0, borderLeft: 'none', borderTop: 'none', borderBottom: 'none' }}>
-      <div className="p-6 mb-6">
-        <h1 className="text-2xl font-heading font-bold text-white">DPWH</h1>
-        <p className="text-xs text-white/40">Infrastructure Dashboard</p>
+      <div className="p-6 mb-6 flex items-center gap-3">
+        <Image src="/logos/DPWH.png" alt="DPWH Logo" width={48} height={48} />
+        <div>
+          <h1 className="text-2xl font-heading font-bold text-white">DPWH</h1>
+          <p className="text-xs text-white/40">Infrastructure Dashboard</p>
+        </div>
       </div>
       <nav className="px-4 space-y-2">
         {navItems.map((item) => {

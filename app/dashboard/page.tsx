@@ -6,19 +6,39 @@ import ProjectsByYearChart from '@/components/dashboard/ProjectsByYearChart'
 import RecentProjectsTable from '@/components/dashboard/RecentProjectsTable'
 import { supabase } from '@/lib/supabase'
 
+async function fetchAllRows(selectQuery: any) {
+  const allData: any[] = []
+  let page = 0
+  const pageSize = 1000
+  
+  while (true) {
+    const { data, error } = await selectQuery.range(page * pageSize, (page + 1) * pageSize - 1)
+    if (error) {
+      console.error('Error fetching all rows:', error)
+      break
+    }
+    if (!data || data.length === 0) break
+    allData.push(...data)
+    if (data.length < pageSize) break
+    page++
+  }
+  
+  return allData
+}
+
 export default async function DashboardPage() {
   // Run all queries in parallel
   const [
     { count: totalCount },
-    { data: budgetData },
-    { data: statusData },
-    { data: yearData },
+    budgetData,
+    statusData,
+    yearData,
     { data: recentData },
   ] = await Promise.all([
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
-    supabase.from('dpwh_projects').select('region, budget').not('region', 'is', null),
-    supabase.from('dpwh_projects').select('status').not('status', 'is', null),
-    supabase.from('dpwh_projects').select('infra_year, budget').not('infra_year', 'is', null),
+    fetchAllRows(supabase.from('dpwh_projects').select('region, budget').not('region', 'is', null)),
+    fetchAllRows(supabase.from('dpwh_projects').select('status').not('status', 'is', null)),
+    fetchAllRows(supabase.from('dpwh_projects').select('infra_year, budget').not('infra_year', 'is', null)),
     supabase.from('dpwh_projects')
       .select('contract_id, description, region, category, budget, status, progress')
       .order('start_date', { ascending: false })
@@ -27,7 +47,7 @@ export default async function DashboardPage() {
 
   // Aggregate budget by region
   const regionMap: Record<string, number> = {}
-  for (const row of budgetData || []) {
+  for (const row of budgetData) {
     if (!row.region) continue
     regionMap[row.region] = (regionMap[row.region] || 0) + Number(row.budget || 0)
   }
@@ -38,7 +58,7 @@ export default async function DashboardPage() {
 
   // Aggregate by status
   const statusMap: Record<string, number> = {}
-  for (const row of statusData || []) {
+  for (const row of statusData) {
     const s = row.status || 'Unknown'
     statusMap[s] = (statusMap[s] || 0) + 1
   }
@@ -46,7 +66,7 @@ export default async function DashboardPage() {
 
   // Aggregate by year
   const yearMap: Record<string, { count: number; budget: number }> = {}
-  for (const row of yearData || []) {
+  for (const row of yearData) {
     const y = row.infra_year || 'Unknown'
     if (!yearMap[y]) yearMap[y] = { count: 0, budget: 0 }
     yearMap[y].count += 1
@@ -57,7 +77,7 @@ export default async function DashboardPage() {
     .sort((a, b) => a.year.localeCompare(b.year))
 
   // KPI numbers
-  const totalBudget = (budgetData || []).reduce((s, r) => s + Number(r.budget || 0), 0)
+  const totalBudget = budgetData.reduce((s, r) => s + Number(r.budget || 0), 0)
   const completedCount = statusMap['Completed'] || 0
   const ongoingCount = statusMap['On-Going'] || statusMap['On Going'] || 0
 

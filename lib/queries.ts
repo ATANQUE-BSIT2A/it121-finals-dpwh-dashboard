@@ -1,18 +1,38 @@
 import { supabase } from './supabase';
 import type { Project } from '@/types';
 
+async function fetchAllRows(selectQuery: any) {
+  const allData: any[] = [];
+  let page = 0;
+  const pageSize = 1000;
+  
+  while (true) {
+    const { data, error } = await selectQuery.range(page * pageSize, (page + 1) * pageSize - 1);
+    if (error) {
+      console.error('Error fetching all rows:', error);
+      break;
+    }
+    if (!data || data.length === 0) break;
+    allData.push(...data);
+    if (data.length < pageSize) break;
+    page++;
+  }
+  
+  return allData;
+}
+
 export async function getDashboardStats() {
-  const [total, totalBudget, completed, ongoing, avgProgress] = await Promise.all([
+  const [total, budgetData, completed, ongoing, progressData] = await Promise.all([
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }),
-    supabase.from('dpwh_projects').select('budget').returns<{ budget: number | null }[]>(),
+    fetchAllRows(supabase.from('dpwh_projects').select('budget')),
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }).eq('status', 'Completed'),
     supabase.from('dpwh_projects').select('*', { count: 'exact', head: true }).eq('status', 'On-Going'),
-    supabase.from('dpwh_projects').select('progress').returns<{ progress: number | null }[]>(),
+    fetchAllRows(supabase.from('dpwh_projects').select('progress')),
   ]);
 
-  const budgetSum = totalBudget.data?.reduce((sum, p) => sum + (p.budget || 0), 0) || 0;
-  const progressSum = avgProgress.data?.filter(p => p.progress !== null).reduce((sum, p) => sum + (p.progress as number), 0) || 0;
-  const progressCount = avgProgress.data?.filter(p => p.progress !== null).length || 1;
+  const budgetSum = budgetData.reduce((sum, p) => sum + (p.budget || 0), 0) || 0;
+  const progressSum = progressData.filter(p => p.progress !== null).reduce((sum, p) => sum + (p.progress as number), 0) || 0;
+  const progressCount = progressData.filter(p => p.progress !== null).length || 1;
 
   return {
     total: total.count || 0,
@@ -94,8 +114,8 @@ export async function getProjectById(contractId: string) {
 }
 
 export async function getBudgetByRegion() {
-  const { data, error } = await supabase.from('dpwh_projects').select('region, budget').returns<{ region: string | null; budget: number | null }[]>();
-  if (error || !data) return [];
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('region, budget'));
+  if (!data) return [];
 
   const regionData: Record<string, number> = {};
   data.forEach(item => {
@@ -111,8 +131,8 @@ export async function getBudgetByRegion() {
 }
 
 export async function getProjectsByStatus() {
-  const { data, error } = await supabase.from('dpwh_projects').select('status').returns<{ status: string | null }[]>();
-  if (error || !data) return [];
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('status'));
+  if (!data) return [];
 
   const statusData: Record<string, number> = {};
   data.forEach(item => {
@@ -125,8 +145,8 @@ export async function getProjectsByStatus() {
 }
 
 export async function getProjectsByCategory() {
-  const { data, error } = await supabase.from('dpwh_projects').select('category, budget').returns<{ category: string | null; budget: number | null }[]>();
-  if (error || !data) return [];
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('category, budget'));
+  if (!data) return [];
 
   const categoryData: Record<string, { count: number; totalBudget: number }> = {};
   data.forEach(item => {
@@ -143,8 +163,8 @@ export async function getProjectsByCategory() {
 }
 
 export async function getProjectsByYear() {
-  const { data, error } = await supabase.from('dpwh_projects').select('infra_year, budget').returns<{ infra_year: string | null; budget: number | null }[]>();
-  if (error || !data) return [];
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('infra_year, budget'));
+  if (!data) return [];
 
   const yearData: Record<string, { count: number; totalBudget: number }> = {};
   data.forEach(item => {
@@ -162,27 +182,31 @@ export async function getProjectsByYear() {
     .sort((a, b) => a.year.localeCompare(b.year));
 }
 
-export async function getRegions() {
-  const { data, error } = await supabase
-    .from('dpwh_projects')
-    .select('region')
-    .order('region');
-  if (error || !data) return [];
-
-  const regions = new Set<string>();
-  data.forEach(item => {
-    if (item.region) regions.add(item.region);
-  });
-  return Array.from(regions);
+export function getRegions() {
+  return [
+    'NCR',
+    'CAR',
+    'Region I',
+    'Region II',
+    'Region III',
+    'Region IV-A',
+    'Region IV-B',
+    'Region V',
+    'Region VI',
+    'Region VII',
+    'Region VIII',
+    'Region IX',
+    'Region X',
+    'Region XI',
+    'Region XII',
+    'Region XIII',
+    'NIR',
+  ];
 }
 
 export async function getProvincesByRegion(region: string) {
-  const { data, error } = await supabase
-    .from('dpwh_projects')
-    .select('province')
-    .eq('region', region)
-    .order('province');
-  if (error || !data) return [];
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('province').eq('region', region));
+  if (!data) return [];
 
   const provinces = new Set<string>();
   data.forEach(item => {
@@ -192,11 +216,8 @@ export async function getProvincesByRegion(region: string) {
 }
 
 export async function getCategories() {
-  const { data, error } = await supabase
-    .from('dpwh_projects')
-    .select('category')
-    .order('category');
-  if (error || !data) return [];
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('category'));
+  if (!data) return [];
 
   const categories = new Set<string>();
   data.forEach(item => {
@@ -206,8 +227,8 @@ export async function getCategories() {
 }
 
 export async function getTopContractors(limit: number = 20) {
-  const { data, error } = await supabase.from('dpwh_projects').select('contractor, budget, progress').returns<{ contractor: string | null; budget: number | null; progress: number | null }[]>();
-  if (error || !data) return [];
+  const data = await fetchAllRows(supabase.from('dpwh_projects').select('contractor, budget, progress'));
+  if (!data) return [];
 
   const contractorData: Record<string, { count: number; totalBudget: number; totalProgress: number; progressCount: number }> = {};
   data.forEach(item => {

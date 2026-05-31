@@ -4,6 +4,9 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'DPWH Infrastructure Dashboard',
   description: 'Philippine infrastructure project tracker',
+  icons: {
+    icon: '/favicon.png',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
