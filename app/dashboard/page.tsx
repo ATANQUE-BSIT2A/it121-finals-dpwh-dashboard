@@ -6,6 +6,9 @@ import ProjectsByYearChart from '@/components/dashboard/ProjectsByYearChart'
 import RecentProjectsTable from '@/components/dashboard/RecentProjectsTable'
 import { supabase } from '@/lib/supabase'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function fetchAllRows(selectQuery: any) {
   const allData: any[] = []
   let page = 0

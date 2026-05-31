@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 import { LayoutDashboard, FolderOpen, BarChart2, Map, Info } from 'lucide-react'
 
 const links = [
@@ -16,18 +17,18 @@ export default function Sidebar() {
   return (
     <nav className="sidebar">
       {/* Logo */}
-      <div style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #21262d' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'linear-gradient(135deg, #1f6feb, #388bfd)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
-          }}>D</div>
-          <div>
-            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#e6edf3', lineHeight: 1.2 }}>DPWH</div>
-            <div style={{ fontSize: '0.65rem', color: '#8b949e', lineHeight: 1.2 }}>Infrastructure</div>
-          </div>
+      <div style={{ padding: '1rem', borderBottom: '1px solid #21262d', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Image
+          src="/logos/DPWH.png"
+          alt="DPWH"
+          width={38}
+          height={38}
+          style={{ objectFit: 'contain', flexShrink: 0 }}
+          priority
+        />
+        <div>
+          <div style={{ fontSize: '0.875rem', fontWeight: 700, color: '#e6edf3', lineHeight: 1.2 }}>DPWH</div>
+          <div style={{ fontSize: '0.65rem', color: '#8b949e', lineHeight: 1.2 }}>Infrastructure Dashboard</div>
         </div>
       </div>
 

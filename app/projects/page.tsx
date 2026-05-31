@@ -1,18 +1,16 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import AppLayout from '@/components/AppLayout'
 import ProjectDrawer from '@/components/ProjectDrawer'
-import { formatPeso, truncate, statusClass, progressColor } from '@/lib/utils'
-import { getRegions } from '@/lib/queries'
-import { Search, Filter, X } from 'lucide-react'
+import { formatPeso, truncate, progressColor } from '@/lib/utils'
+import { REGIONS } from '@/lib/regions'
+import { STATUSES, statusBadgeStyle } from '@/lib/statuses'
+import { Search, X } from 'lucide-react'
 
 const PER_PAGE = 50
 
 export default function ProjectsPage() {
-  const router = useRouter()
-
   const [projects, setProjects]         = useState<any[]>([])
   const [totalCount, setTotalCount]     = useState(0)
   const [loading, setLoading]           = useState(true)
@@ -22,7 +20,6 @@ export default function ProjectsPage() {
   // Filters
   const [search, setSearch]       = useState('')
   const [region, setRegion]       = useState('')
-  const [province, setProvince]   = useState('')
   const [category, setCategory]   = useState('')
   const [status, setStatus]       = useState('')
   const [year, setYear]           = useState('')
@@ -30,35 +27,21 @@ export default function ProjectsPage() {
   const [sortDir, setSortDir]     = useState<'asc'|'desc'>('desc')
 
   // Filter options
-  const regions = getRegions()
-  const [provinces, setProvinces]   = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [years, setYears]           = useState<string[]>([])
 
   // Load filter options once
   useEffect(() => {
     const loadOptions = async () => {
-      const [{ data: c }, { data: y }, { data: r }] = await Promise.all([
+      const [{ data: c }, { data: y }] = await Promise.all([
         supabase.from('dpwh_projects').select('category').not('category','is',null),
         supabase.from('dpwh_projects').select('infra_year').not('infra_year','is',null),
-        supabase.from('dpwh_projects').select('region').not('region','is',null).limit(100),
       ])
-      console.log('Unique regions in Supabase:', [...new Set(r?.map((x: any) => x.region))])
       setCategories([...new Set(c?.map((x: any) => x.category))].sort() as string[])
       setYears([...new Set(y?.map((x: any) => x.infra_year))].sort().reverse() as string[])
     }
     loadOptions()
   }, [])
-
-  // Load provinces when region changes
-  useEffect(() => {
-    setProvince('')
-    if (!region) { setProvinces([]); return }
-    supabase.from('dpwh_projects').select('province').eq('region', region).not('province','is',null)
-      .then(({ data }) => {
-        setProvinces([...new Set(data?.map((x: any) => x.province))].sort() as string[])
-      })
-  }, [region])
 
   // Fetch projects
   const fetchProjects = useCallback(async () => {
@@ -69,7 +52,6 @@ export default function ProjectsPage() {
       q = q.or(`description.ilike.%${search}%,contract_id.ilike.%${search}%,contractor.ilike.%${search}%`)
     }
     if (region)   q = q.eq('region', region)
-    if (province) q = q.eq('province', province)
     if (category) q = q.eq('category', category)
     if (status)   q = q.eq('status', status)
     if (year)     q = q.eq('infra_year', year)
@@ -82,88 +64,95 @@ export default function ProjectsPage() {
     setProjects(data || [])
     setTotalCount(count || 0)
     setLoading(false)
-  }, [search, region, province, category, status, year, page, sortBy, sortDir])
+  }, [search, region, category, status, year, page, sortBy, sortDir])
 
-  useEffect(() => { setPage(1) }, [search, region, province, category, status, year])
+  useEffect(() => { setPage(1) }, [search, region, category, status, year])
   useEffect(() => { fetchProjects() }, [fetchProjects])
 
-  const clearAll = () => { setSearch(''); setRegion(''); setProvince(''); setCategory(''); setStatus(''); setYear('') }
-  const hasFilters = search || region || province || category || status || year
+  const clearAll = () => { setSearch(''); setRegion(''); setCategory(''); setStatus(''); setYear('') }
+  const hasFilters = search || region || category || status || year
   const totalPages = Math.ceil(totalCount / PER_PAGE)
-
-  const statuses = ['Completed', 'On-Going', 'Suspended', 'Terminated', 'For Procurement']
-  const sortOptions = [
-    { value: 'start_date:desc',  label: 'Newest First' },
-    { value: 'start_date:asc',   label: 'Oldest First' },
-    { value: 'budget:desc',      label: 'Budget: High → Low' },
-    { value: 'budget:asc',       label: 'Budget: Low → High' },
-    { value: 'progress:desc',    label: 'Progress: High → Low' },
-    { value: 'progress:asc',     label: 'Progress: Low → High' },
-  ]
 
   return (
     <AppLayout title="Projects">
       {/* Filter bar */}
-      <div className="card-elevated" style={{ marginBottom: '1rem', padding: '0.875rem 1rem' }}>
-        <div style={{ display: 'flex', flexWrap: 'nowrap', gap: '0.75rem', alignItems: 'center', overflowX: 'auto' }}>
-
-          {/* Search */}
-          <div style={{ position: 'relative', flexGrow: 1, minWidth: 220, flexShrink: 1 }}>
-            <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#484f58' }} />
+      <div className="card-elevated" style={{ padding: '0.75rem 1rem', marginBottom: '0.75rem', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+            <Search size={13} style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: '#484f58', pointerEvents: 'none' }} />
             <input
               className="input"
-              style={{ paddingLeft: 30, fontSize: '0.8rem', height: 34, width: '100%' }}
+              style={{ paddingLeft: 30, height: 34, fontSize: '0.8rem', width: '100%' }}
               placeholder="Search by name, ID, or contractor…"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
 
-          {/* Region */}
-          <select className="input" style={{ minWidth: 160, width: 160, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={region} onChange={e => setRegion(e.target.value)}>
+          <select
+            className="input"
+            style={{ width: 180, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
+            value={region}
+            onChange={e => setRegion(e.target.value)}
+          >
             <option value="">All Regions</option>
-            {regions.map(r => <option key={r} value={r}>{r}</option>)}
+            {REGIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
 
-          {/* Province — only if region selected */}
-          {region && (
-            <select className="input" style={{ minWidth: 180, width: 180, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={province} onChange={e => setProvince(e.target.value)}>
-              <option value="">All Provinces</option>
-              {provinces.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          )}
-
-          {/* Category */}
-          <select className="input" style={{ minWidth: 180, width: 180, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={category} onChange={e => setCategory(e.target.value)}>
+          <select
+            className="input"
+            style={{ width: 170, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+          >
             <option value="">All Categories</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
 
-          {/* Status */}
-          <select className="input" style={{ minWidth: 150, width: 150, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={status} onChange={e => setStatus(e.target.value)}>
+          <select
+            className="input"
+            style={{ width: 160, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
+            value={status}
+            onChange={e => setStatus(e.target.value)}
+          >
             <option value="">All Statuses</option>
-            {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+            {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
 
-          {/* Year */}
-          <select className="input" style={{ minWidth: 110, width: 110, height: 34, fontSize: '0.8rem', flexShrink: 0 }} value={year} onChange={e => setYear(e.target.value)}>
+          <select
+            className="input"
+            style={{ width: 110, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
+            value={year}
+            onChange={e => setYear(e.target.value)}
+          >
             <option value="">All Years</option>
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
 
-          {/* Sort */}
           <select
             className="input"
-            style={{ width: 180, height: 34, fontSize: '0.8rem' }}
+            style={{ width: 150, flexShrink: 0, height: 34, fontSize: '0.8rem' }}
             value={`${sortBy}:${sortDir}`}
-            onChange={e => { const [s, d] = e.target.value.split(':'); setSortBy(s); setSortDir(d as 'asc'|'desc') }}
+            onChange={e => {
+              const [s, d] = e.target.value.split(':')
+              setSortBy(s)
+              setSortDir(d as 'asc'|'desc')
+            }}
           >
-            {sortOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            <option value="start_date:desc">Newest First</option>
+            <option value="start_date:asc">Oldest First</option>
+            <option value="budget:desc">Budget: High → Low</option>
+            <option value="budget:asc">Budget: Low → High</option>
+            <option value="progress:desc">Progress: High → Low</option>
+            <option value="progress:asc">Progress: Low → High</option>
           </select>
 
-          {/* Clear */}
           {hasFilters && (
-            <button className="btn btn-ghost" style={{ height: 34, fontSize: '0.8rem', whiteSpace: 'nowrap' }} onClick={clearAll}>
+            <button
+              className="btn btn-ghost"
+              onClick={clearAll}
+              style={{ flexShrink: 0, height: 34, padding: '0 10px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+            >
               <X size={13} /> Clear
             </button>
           )}
@@ -204,7 +193,7 @@ export default function ProjectsPage() {
                     <td style={{ color: '#8b949e', whiteSpace: 'nowrap', fontSize: '0.78rem' }}>{p.region}</td>
                     <td style={{ color: '#8b949e', whiteSpace: 'nowrap', fontSize: '0.78rem' }}>{p.category}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>{formatPeso(p.budget)}</td>
-                    <td><span className={statusClass(p.status)}>{p.status}</span></td>
+                    <td><span style={statusBadgeStyle(p.status)}>{p.status}</span></td>
                     <td style={{ minWidth: 100 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div className="progress-track" style={{ flex: 1 }}>

@@ -75,7 +75,15 @@ body {
 .input::placeholder { color: #484f58; }
 
 /* ── Select ── */
-select.input { cursor: pointer; }
+select.input {
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
 
 /* ── Button ── */
 .btn {

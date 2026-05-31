@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { X, ExternalLink, Loader } from 'lucide-react'
-import { formatPeso, formatDate, statusClass, progressColor } from '@/lib/utils'
+import { formatPeso, formatDate, progressColor } from '@/lib/utils'
+import { statusBadgeStyle } from '@/lib/statuses'
 
 interface AiResult { title: string; summary: string; url: string; source: string }
 
@@ -52,7 +53,7 @@ export default function ProjectDrawer({ project, onClose }: { project: any; onCl
             <h2 style={{ fontSize: '1rem', fontWeight: 600, color: '#e6edf3', lineHeight: 1.4, marginBottom: 8 }}>
               {project.description}
             </h2>
-            <span className={statusClass(project.status)}>{project.status || 'Unknown'}</span>
+            <span style={statusBadgeStyle(project.status)}>{project.status || 'Unknown'}</span>
           </div>
           <button onClick={onClose} className="btn btn-ghost" style={{ padding: 6, flexShrink: 0 }}>
             <X size={18} />

@@ -1,5 +1,6 @@
 'use client'
-import { truncate, formatPeso, progressColor, statusClass } from '@/lib/utils'
+import { truncate, formatPeso, progressColor } from '@/lib/utils'
+import { statusBadgeStyle } from '@/lib/statuses'
 import { useState } from 'react'
 import ProjectDrawer from '@/components/ProjectDrawer'
 
@@ -24,7 +25,7 @@ export default function RecentProjectsTable({ data }: { data: any[] }) {
                 <td style={{ color: '#8b949e', whiteSpace: 'nowrap' }}>{p.region}</td>
                 <td style={{ color: '#8b949e', whiteSpace: 'nowrap' }}>{p.category}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>{formatPeso(p.budget)}</td>
-                <td><span className={statusClass(p.status)}>{p.status}</span></td>
+                <td><span style={statusBadgeStyle(p.status)}>{p.status}</span></td>
                 <td style={{ minWidth: 100 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div className="progress-track" style={{ flex: 1 }}>
