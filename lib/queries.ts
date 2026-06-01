@@ -4,48 +4,42 @@ import { REGIONS } from './regions'
 
 /**
  * Robust fetcher that handles large datasets by chunking requests.
- * Uses controlled concurrency and range queries to avoid timeouts.
  */
 export async function fetchAllRows(columns: string = '*', maxRows: number = 300000, filter?: (query: any) => any) {
-  const pageSize = 5000; 
-  
-  // 1. Get count using a clean query
-  let countQuery = supabase.from('dpwh_projects').select('*', { count: 'exact', head: true });
-  if (filter) countQuery = filter(countQuery);
-  const { count, error: countError } = await countQuery;
-  if (countError) {
-    console.error('fetchAllRows count error:', countError);
-    return [];
-  }
-  
-  const total = Math.min(count || 0, maxRows);
-  const numPages = Math.ceil(total / pageSize);
+  const pageSize = 10000; 
   const allData: any[] = [];
-  
-  // 2. Fetch in batches with controlled concurrency
-  const concurrency = 5; 
-  for (let i = 0; i < numPages; i += concurrency) {
+  let start = 0;
+
+  while (allData.length < maxRows) {
     try {
-      const batch = Array.from({ length: Math.min(concurrency, numPages - i) }, (_, j) => i + j);
-      const results = await Promise.all(
-        batch.map(page => {
-          return supabase
-            .from('dpwh_projects')
-            .select('*')
-            .range(page * pageSize, (page + 1) * pageSize - 1)
-            .then((res: any) => {
-              if (res.error) throw res.error;
-              return res.data || [];
-            });
-        })
-      );
-      allData.push(...results.flat());
+      let query = supabase
+        .from('dpwh_projects')
+        .select(columns)
+        .range(start, start + pageSize - 1);
+
+      if (filter) {
+        query = filter(query);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('fetchAllRows error:', error);
+        break;
+      }
+
+      if (!data || data.length === 0) {
+        break;
+      }
+
+      allData.push(...data);
+      start += pageSize;
     } catch (e) {
-      console.error(`Batch fetch error at index ${i}:`, e);
-      // If a batch fails, we continue to try and get as much data as possible
+      console.error('fetchAllRows exception:', e);
+      break;
     }
   }
-  
+
   return allData;
 }
 
